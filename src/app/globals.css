@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #080808;
+    color: #e8e8e8;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0d0d0d; }
+  ::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
+
+  input, button, textarea {
+    font-family: inherit;
+  }
+
+  input::placeholder {
+    color: #2a2a2a;
+  }
+
+  ::selection {
+    background: rgba(255, 224, 72, 0.19);
+    color: #FFE048;
+  }
+}
+
+@layer components {
+  .grade-glow-s { box-shadow: 0 0 28px rgba(0, 255, 178, 0.33); }
+  .grade-glow-a { box-shadow: 0 0 28px rgba(124, 255, 107, 0.33); }
+  .grade-glow-b { box-shadow: 0 0 28px rgba(255, 224, 72, 0.33); }
+  .grade-glow-c { box-shadow: 0 0 28px rgba(255, 159, 67, 0.33); }
+  .grade-glow-d { box-shadow: 0 0 28px rgba(255, 107, 107, 0.33); }
+  .grade-glow-f { box-shadow: 0 0 28px rgba(255, 56, 96, 0.33); }
+}
+
+@layer utilities {
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+}

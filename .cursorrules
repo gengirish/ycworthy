@@ -1,0 +1,55 @@
+# YCWorthy — Cursor Rules
+
+## Project Identity
+- App: YCWorthy — AI-powered YC startup evaluator
+- Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui
+- AI: Anthropic Claude + Google Gemini Pro (switchable via toggle)
+- Deploy: Vercel
+
+## Code Style
+- Always use TypeScript with strict types — no `any`
+- Use `async/await` — never `.then()` chains
+- Prefer named exports from components; default export only for pages
+- All API calls go through `src/lib/` — never fetch directly from components
+- Use `zod` for all API input/output validation
+- Error handling: always wrap API calls in try/catch, return typed errors
+
+## File Conventions
+- Components: `src/components/ComponentName.tsx` (PascalCase)
+- Hooks: `src/hooks/useSomething.ts` (camelCase with `use` prefix)
+- Lib: `src/lib/name.ts` (camelCase)
+- Types: defined in `src/lib/types.ts` — import from there
+- API routes: `src/app/api/[route]/route.ts`
+
+## AI Provider Rules
+- Both providers implement the same `AnalysisProvider` interface in `src/lib/types.ts`
+- Claude: use `@anthropic-ai/sdk` with `claude-sonnet-4-20250514`
+- Gemini: use `@google/generative-ai` with `gemini-1.5-pro`
+- System prompt lives in `src/lib/prompts.ts` — shared between both providers
+- Always ask for JSON output; strip markdown fences before `JSON.parse()`
+- Max tokens: 2048 for both providers
+
+## UI Rules
+- Color palette: dark theme (#080808 bg, #FFE048 accent, grade colors)
+- Grade colors: S=#00FFB2, A=#7CFF6B, B=#FFE048, C=#FF9F43, D=#FF6B6B, F=#FF3860
+- Use shadcn/ui components where available (Button, Input, Badge, Card)
+- Animations: CSS transitions preferred; use Framer Motion only for complex sequences
+- Mobile-first responsive — everything must work on 375px width
+
+## API Route Rules
+- All routes return `{ data, error }` shape
+- Validate request body with zod before processing
+- Never expose raw API errors to client
+- Add `X-Provider` response header indicating which AI was used
+
+## Environment Variables
+- `ANTHROPIC_API_KEY` — Claude API key
+- `GOOGLE_AI_API_KEY` — Gemini API key
+- Never read env vars in client components — only in API routes and server components
+
+## Do NOT
+- Use `pages/` directory — this is App Router only
+- Use `axios` — use native `fetch`
+- Use `moment.js` — use `date-fns`
+- Add `console.log` to production code — use proper error boundaries
+- Hardcode API keys anywhere
