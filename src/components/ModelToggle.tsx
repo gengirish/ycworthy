@@ -19,7 +19,7 @@ const PROVIDERS: { id: AIProvider; label: string; sub: string; color: string; ac
   {
     id: "gemini",
     label: "Gemini",
-    sub: "1.5 Pro + JSON Mode",
+    sub: "2.5 Flash + JSON Mode",
     color: "#4A9EFF",
     activeClasses: "border-provider-gemini/25 bg-provider-gemini/8 text-provider-gemini",
   },
