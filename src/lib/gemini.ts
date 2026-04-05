@@ -1,9 +1,5 @@
 // src/lib/gemini.ts
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisProvider, AnalysisResult } from "./types";
 import { SYSTEM_PROMPT, USER_PROMPT } from "./prompts";
 
@@ -19,24 +15,12 @@ export class GeminiProvider implements AnalysisProvider {
       model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
         temperature: 0.4,
-        responseMimeType: "application/json", // Gemini native JSON mode
+        responseMimeType: "application/json",
       },
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-      ],
     });
 
-    // Gemini doesn't have native web search in the same way,
-    // so we enrich the prompt with the URL and ask it to use its knowledge
     const enrichedPrompt = `${USER_PROMPT(url)}
 
 Note: Use your knowledge about this company/domain to provide the most accurate evaluation possible. 
