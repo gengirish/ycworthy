@@ -12,40 +12,50 @@ const PROVIDERS: { id: AIProvider; label: string; sub: string; color: string; ac
   {
     id: "claude",
     label: "Claude",
-    sub: "Sonnet 4 + Web Search",
+    sub: "Sonnet 4 · Web Search",
     color: "#CC8844",
-    activeClasses: "border-provider-claude/25 bg-provider-claude/8 text-provider-claude",
+    activeClasses: "border-provider-claude/35 bg-provider-claude/[0.08] text-provider-claude",
   },
   {
     id: "gemini",
     label: "Gemini",
-    sub: "2.5 Flash + JSON Mode",
+    sub: "2.5 Flash · JSON Mode",
     color: "#4A9EFF",
-    activeClasses: "border-provider-gemini/25 bg-provider-gemini/8 text-provider-gemini",
+    activeClasses: "border-provider-gemini/35 bg-provider-gemini/[0.08] text-provider-gemini",
   },
 ];
 
 export function ModelToggle({ value, onChange, disabled }: Props) {
   return (
-    <div className="inline-flex bg-yc-surface border border-yc-border-light/40 rounded-[10px] p-1 gap-1">
+    <div
+      role="radiogroup"
+      aria-label="AI provider"
+      className="inline-flex bg-yc-surface border border-yc-border-light/40 rounded-xl p-1 gap-1"
+    >
       {PROVIDERS.map((p) => {
         const active = value === p.id;
         return (
           <button
             key={p.id}
+            role="radio"
+            aria-checked={active}
             onClick={() => !disabled && onChange(p.id)}
             disabled={disabled}
             className={clsx(
-              "px-[18px] py-2 rounded-[7px] border transition-all text-left",
-              active ? p.activeClasses : "border-transparent text-yc-muted bg-transparent",
+              "px-[18px] py-2 rounded-lg border transition-colors duration-200 text-left",
+              active
+                ? p.activeClasses
+                : "border-transparent text-yc-dim bg-transparent hover:text-yc-text",
               disabled && "opacity-60 cursor-not-allowed",
               !disabled && "cursor-pointer"
             )}
           >
-            <div className="font-mono font-bold text-[13px]">{p.label}</div>
+            <div className="font-display font-bold text-[13px] tracking-tight">
+              {p.label}
+            </div>
             <div
-              className="text-[10px] mt-px"
-              style={{ color: active ? `${p.color}99` : "#333" }}
+              className="text-[10px] mt-0.5 font-mono"
+              style={{ color: active ? `${p.color}c0` : "#555" }}
             >
               {p.sub}
             </div>

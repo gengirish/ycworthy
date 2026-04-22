@@ -9,6 +9,7 @@ const config: Config = {
         yc: {
           bg: "#080808",
           surface: "#0d0d0d",
+          "surface-2": "#121212",
           border: "#1e1e1e",
           "border-light": "#2a2a2a",
           accent: "#FFE048",
@@ -30,8 +31,36 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Georgia", "serif"],
-        mono: ["'Courier New'", "monospace"],
+        // Body / UI — recommended by ui-ux-pro-max for tech/AI products
+        sans: [
+          "'DM Sans'",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+        // Display / headlines
+        display: [
+          "'Space Grotesk'",
+          "'DM Sans'",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        // Editorial accent (kept for brand/YC magazine feel where needed)
+        serif: ["Georgia", "'Times New Roman'", "serif"],
+        mono: [
+          "'JetBrains Mono'",
+          "'Fira Code'",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "'Courier New'",
+          "monospace",
+        ],
       },
       animation: {
         "fade-up": "fadeUp 0.4s ease both",
@@ -39,6 +68,7 @@ const config: Config = {
         bounce: "bounce 1.2s ease-in-out infinite",
         "score-fill": "scoreFill 1.3s cubic-bezier(0.22,1,0.36,1)",
         "glow-pulse": "glowPulse 2s ease-in-out infinite alternate",
+        shimmer: "shimmer 2.4s linear infinite",
       },
       keyframes: {
         fadeUp: {
@@ -60,6 +90,10 @@ const config: Config = {
         glowPulse: {
           "0%": { boxShadow: "0 0 20px rgba(255, 224, 72, 0.2)" },
           "100%": { boxShadow: "0 0 40px rgba(255, 224, 72, 0.5)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
         },
       },
       backgroundImage: {

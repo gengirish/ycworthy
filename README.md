@@ -186,4 +186,6 @@ vercel --prod
 
 ---
 
-Built for IntelliForge AI · [intelliforge.tech](https://intelliforge.tech)
+Built by [IntelliForge AI](https://www.intelliforge.tech/) · Crafted by [Girish Hiremath](https://girishbhiremath.vercel.app/)
+
+> _Aligned with the Bharat AI Mission — democratizing AI for India._

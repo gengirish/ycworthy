@@ -1,6 +1,15 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Share2,
+  Check,
+  XCircle,
+  Sparkles,
+  ExternalLink,
+} from "lucide-react";
 import { AIProvider } from "@/lib/types";
 import { addToHistory } from "@/lib/history";
 import { useAnalyze } from "@/hooks/useAnalyze";
@@ -33,21 +42,24 @@ function HomeContent() {
   const { result, loading, error, provider: usedProvider, durationMs, analyze, reset } =
     useAnalyze();
 
-  const handleAnalyze = useCallback(async (targetUrl?: string, targetProvider?: AIProvider) => {
-    const u = targetUrl ?? url;
-    const p = targetProvider ?? provider;
-    if (!u.trim() || loading) return;
+  const handleAnalyze = useCallback(
+    async (targetUrl?: string, targetProvider?: AIProvider) => {
+      const u = targetUrl ?? url;
+      const p = targetProvider ?? provider;
+      if (!u.trim() || loading) return;
 
-    const fullUrl = u.startsWith("http") ? u : `https://${u}`;
-    setStepIndex(0);
-    stepTimer.current = setInterval(() => {
-      setStepIndex((i) => (i + 1) % LOADING_STEPS.length);
-    }, 2400);
+      const fullUrl = u.startsWith("http") ? u : `https://${u}`;
+      setStepIndex(0);
+      stepTimer.current = setInterval(() => {
+        setStepIndex((i) => (i + 1) % LOADING_STEPS.length);
+      }, 2400);
 
-    await analyze(fullUrl, p);
+      await analyze(fullUrl, p);
 
-    if (stepTimer.current) clearInterval(stepTimer.current);
-  }, [url, provider, loading, analyze]);
+      if (stepTimer.current) clearInterval(stepTimer.current);
+    },
+    [url, provider, loading, analyze]
+  );
 
   useEffect(() => {
     if (result && usedProvider) {
@@ -100,49 +112,67 @@ function HomeContent() {
   return (
     <main className="min-h-screen bg-yc-bg text-yc-text font-sans">
       {/* Grid background */}
-      <div className="fixed inset-0 pointer-events-none bg-grid bg-[size:80px_80px] z-0" />
+      <div
+        className="fixed inset-0 pointer-events-none bg-grid bg-[size:80px_80px] z-0"
+        aria-hidden
+      />
 
-      <div className="relative z-[1] max-w-[800px] mx-auto px-5 pt-[60px] pb-[100px]">
+      <div className="relative z-[1] max-w-[860px] mx-auto px-5 pt-[60px] pb-[100px]">
         {/* Header */}
         {!result && (
-          <div className="mb-[52px] animate-fade-up">
-            <div className="inline-flex items-center gap-2 mb-[18px] font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-[3px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-yc-accent animate-pulse inline-block" />
+          <header className="mb-[52px] animate-fade-up">
+            <div className="inline-flex items-center gap-2 mb-[18px] font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-full">
+              <Sparkles className="w-3 h-3" strokeWidth={2.5} aria-hidden />
               YC Evaluation System · v2.1
             </div>
 
-            <h1 className="m-0 text-[clamp(48px,9vw,82px)] font-black tracking-[-4px] leading-[0.92] bg-gradient-to-br from-white to-[#444] bg-clip-text text-transparent">
+            <h1 className="m-0 font-display text-[clamp(48px,9vw,82px)] font-bold tracking-[-3.5px] leading-[0.92] bg-gradient-to-br from-white via-[#bfbfbf] to-[#444] bg-clip-text text-transparent">
               YCWorthy
             </h1>
-            <p className="mt-4 text-yc-muted text-[15px] italic max-w-[480px]">
+            <p className="mt-4 font-serif text-yc-dim text-[16px] italic max-w-[520px] leading-[1.55]">
               Drop any startup URL. Get a brutal, honest AI evaluation against
               Y Combinator&apos;s real funding criteria.
             </p>
-          </div>
+          </header>
         )}
 
         {/* Input section */}
         {!result && (
-          <div className="mb-12 animate-fade-up delay-100">
-            <div className="flex border border-yc-border rounded-[10px] overflow-hidden bg-yc-surface mb-4">
-              <div className="px-3.5 flex items-center text-yc-border-light font-mono text-[13px] shrink-0">
+          <section
+            className="mb-12 animate-fade-up delay-100"
+            aria-label="Analyze a startup URL"
+          >
+            <label htmlFor="startup-url" className="sr-only">
+              Startup URL
+            </label>
+            <div className="flex border border-yc-border rounded-xl overflow-hidden bg-yc-surface mb-4 transition-colors duration-200 focus-within:border-yc-accent/60">
+              <div className="px-3.5 flex items-center text-yc-border-light font-mono text-[13px] shrink-0 select-none">
                 https://
               </div>
               <input
+                id="startup-url"
                 ref={inputRef}
                 value={url.replace(/^https?:\/\//, "")}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
                 placeholder="startup-url.com"
                 autoFocus
+                aria-label="Startup URL"
+                inputMode="url"
+                autoComplete="url"
+                spellCheck={false}
                 className="flex-1 bg-transparent border-none outline-none text-yc-text text-[15px] py-[18px] font-mono min-w-0"
               />
               <button
                 onClick={() => handleAnalyze()}
                 disabled={loading || !url.trim()}
-                className="px-[26px] shrink-0 font-mono font-black text-xs tracking-[1px] uppercase transition-all whitespace-nowrap disabled:bg-[#111] disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-black cursor-pointer hover:brightness-110"
+                aria-label="Run YC analysis"
+                className="inline-flex items-center gap-1.5 px-[22px] shrink-0 font-mono font-black text-xs tracking-[1px] uppercase transition-colors duration-200 whitespace-nowrap disabled:bg-[#111] disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-black cursor-pointer hover:bg-[#FFD526]"
               >
-                {loading ? "Analyzing..." : "Rate It →"}
+                {loading ? "Analyzing..." : "Rate It"}
+                {!loading && (
+                  <ArrowRight className="w-3.5 h-3.5" strokeWidth={3} aria-hidden />
+                )}
               </button>
             </div>
 
@@ -155,13 +185,18 @@ function HomeContent() {
               }}
               refreshKey={historyKey}
             />
-          </div>
+          </section>
         )}
 
         {/* Loading */}
         {loading && (
-          <div className="text-center py-[72px] animate-fade-up">
-            <div className="mb-7">
+          <div
+            className="text-center py-[72px] animate-fade-up"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div className="mb-7" aria-hidden>
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
@@ -170,19 +205,24 @@ function HomeContent() {
                 />
               ))}
             </div>
-            <p className="text-yc-muted font-mono text-xs tracking-[2px] uppercase">
+            <p className="text-yc-dim font-mono text-xs tracking-[2px] uppercase">
               {LOADING_STEPS[stepIndex]}
             </p>
+            <span className="sr-only">Analyzing startup, please wait.</span>
           </div>
         )}
 
         {/* Error */}
         {error && !loading && (
-          <div className="p-[18px_20px] bg-grade-d/5 border border-grade-d/20 rounded-[10px] text-grade-d font-mono text-[13px] mb-6 animate-fade-up">
-            ✗ {error}
+          <div
+            role="alert"
+            className="flex items-start gap-3 p-[18px_20px] bg-grade-d/[0.07] border border-grade-d/30 rounded-xl text-grade-d font-mono text-[13px] mb-6 animate-fade-up"
+          >
+            <XCircle className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={2.5} aria-hidden />
+            <span className="flex-1">{error}</span>
             <button
               onClick={handleReset}
-              className="ml-4 bg-transparent border-none text-grade-d/50 cursor-pointer font-mono text-[11px] underline hover:text-grade-d"
+              className="bg-transparent border-none text-grade-d/70 cursor-pointer font-mono text-[11px] underline hover:text-grade-d transition-colors duration-200"
             >
               Try again
             </button>
@@ -196,15 +236,27 @@ function HomeContent() {
             <div className="flex items-center justify-between mb-6 animate-fade-up">
               <button
                 onClick={handleReset}
-                className="font-mono text-[11px] text-yc-muted hover:text-yc-dim bg-transparent border-none cursor-pointer transition-colors uppercase tracking-[1px]"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-yc-dim hover:text-yc-text bg-transparent border-none cursor-pointer transition-colors duration-200 uppercase tracking-[1px]"
               >
-                ← Back
+                <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+                Back
               </button>
               <button
                 onClick={handleShare}
-                className="font-mono text-[11px] px-4 py-2 rounded-lg bg-yc-surface border border-yc-border text-yc-dim hover:border-yc-accent/30 hover:text-yc-accent cursor-pointer transition-all"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] px-3.5 py-2 rounded-lg bg-yc-surface border border-yc-border text-yc-dim hover:border-yc-accent/40 hover:text-yc-accent cursor-pointer transition-colors duration-200"
+                aria-label="Copy a shareable link to this analysis"
               >
-                {copied ? "Copied!" : "Share Link"}
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} aria-hidden />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+                    Share Link
+                  </>
+                )}
               </button>
             </div>
 
@@ -218,11 +270,36 @@ function HomeContent() {
         )}
 
         {/* Footer */}
-        <div className="mt-16 text-center">
-          <p className="font-mono text-[10px] text-yc-muted/40 tracking-[2px] uppercase">
-            Built by IntelliForge AI
+        <footer className="mt-16 pt-8 border-t border-yc-border/60 text-center">
+          <p className="font-mono text-[10px] text-yc-dim tracking-[2px] uppercase inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span>Built by</span>
+            <a
+              href="https://www.intelliforge.tech/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-yc-text/80 hover:text-yc-accent transition-colors duration-200"
+            >
+              IntelliForge AI
+              <ExternalLink className="w-3 h-3 opacity-70" strokeWidth={2.25} aria-hidden />
+              <span className="sr-only">(opens in new tab)</span>
+            </a>
+            <span aria-hidden>·</span>
+            <span className="text-yc-dim/80">Crafted by</span>
+            <a
+              href="https://girishbhiremath.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-yc-text/80 hover:text-yc-accent transition-colors duration-200"
+            >
+              Girish Hiremath
+              <ExternalLink className="w-3 h-3 opacity-70" strokeWidth={2.25} aria-hidden />
+              <span className="sr-only">(opens in new tab)</span>
+            </a>
           </p>
-        </div>
+          <p className="mt-3 font-mono text-[10px] text-yc-dim/50 tracking-[1px]">
+            Aligned with the Bharat AI Mission · Hyderabad, India
+          </p>
+        </footer>
       </div>
     </main>
   );

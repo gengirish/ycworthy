@@ -39,6 +39,9 @@ test-results/
 Thumbs.db
 *.pem
 
+# UI/UX Pro Max skill (installed via `uipro init --ai cursor`, regenerated on demand)
+.cursor/skills/ui-ux-pro-max/
+
 # Vercel
 .vercel
 

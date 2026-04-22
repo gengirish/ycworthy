@@ -20,15 +20,18 @@ export function GradeRing({ grade, size = 80, animate = true }: Props) {
   const color = GRADE_COLOR[grade] ?? "#888";
   return (
     <div
-      className={`flex items-center justify-center rounded-full font-mono font-black tracking-[-2px] shrink-0 transition-all duration-400 ${animate ? GLOW_MAP[grade] : ""}`}
+      className={`flex items-center justify-center rounded-full font-display font-black tracking-[-2px] shrink-0 transition-shadow duration-300 ${animate ? GLOW_MAP[grade] : ""}`}
       style={{
         width: size,
         height: size,
         border: `3px solid ${color}`,
-        background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
+        background: `radial-gradient(circle, ${color}1f 0%, transparent 70%)`,
         fontSize: size * 0.42,
         color,
+        textShadow: `0 0 14px ${color}66`,
       }}
+      role="img"
+      aria-label={`Grade ${grade}`}
     >
       {grade}
     </div>

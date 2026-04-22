@@ -64,11 +64,7 @@ export const GRADE_BG: Record<Grade, string> = {
   F: "rgba(255,56,96,0.07)",
 };
 
-export const CRITERIA_META = [
-  { key: "problem" as const, label: "Problem Clarity",    icon: "◎", desc: "Real, urgent, clearly articulated?" },
-  { key: "market"  as const, label: "Market Size",         icon: "◈", desc: "TAM/SAM — big enough opportunity?" },
-  { key: "solution"as const, label: "Solution & Moat",     icon: "◆", desc: "10x better, unique insight, defensible?" },
-  { key: "traction"as const, label: "Traction & Proof",    icon: "◉", desc: "Revenue, users, growth signals?" },
-  { key: "founder" as const, label: "Founder-Market Fit",  icon: "◑", desc: "Right domain expertise & passion?" },
-  { key: "timing"  as const, label: "Timing & Tailwinds",  icon: "◐", desc: "Why now? Market conditions?" },
-];
+// CRITERIA_META moved to src/lib/criteria.tsx (now uses Lucide SVG icons).
+// Re-export from there if you need it from a `.ts` file:
+//   import { CRITERIA_META } from "@/lib/criteria";
+export type { CriterionKey, CriterionMeta } from "./criteria";
