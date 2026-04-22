@@ -13,9 +13,13 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 │  Frontend + API   │                   │  (Gemini 2.5 Flash)     │
 └──────────────────┘                   └────────────────────────┘
          │                              ┌────────────────────────┐
-         └────── fallback ─────────────►│  OpenRouter (NVIDIA     │
-                                       │  Nemotron Ultra 253B)   │
-                                       └────────────────────────┘
+         │                              │  NVIDIA NIM (preferred) │
+         └────── fallback ─────────────►│  Nemotron Ultra 253B    │
+                                  ┌────►└────────────────────────┘
+                                  │     ┌────────────────────────┐
+                                  └─────│  OpenRouter (used only  │
+                                  if NIM key absent — Nemotron)   │
+                                        └────────────────────────┘
 ```
 
 > Anthropic / Claude was removed entirely. Do not add `ANTHROPIC_API_KEY` back.
@@ -28,30 +32,32 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 |----------|-------|-------|
 | `GEMINI_API_KEY` | `AIza...` | **Required.** Gemini 2.5 Flash (primary / default). Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | _Optional._ Override Gemini model slug. |
-| `OPENROUTER_API_KEY` | `sk-or-v1-...` | **Required.** NVIDIA Nemotron via OpenRouter (automatic fallback). |
-| `OPENROUTER_NVIDIA_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override NVIDIA model slug. |
+| `NVIDIA_NIM_API_KEY` | `nvapi-...` | **Preferred** NVIDIA fallback transport. Direct NVIDIA inference API; ~1000 req/month free. |
+| `NVIDIA_NIM_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override NIM model slug. |
+| `OPENROUTER_API_KEY` | `sk-or-v1-...` | _Optional._ Secondary NVIDIA fallback transport — used only if `NVIDIA_NIM_API_KEY` is absent. At least one of NIM / OpenRouter must be set. |
+| `OPENROUTER_NVIDIA_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override OpenRouter model slug. |
 | `NEXT_PUBLIC_APP_URL` | `https://ycworthy.intelliforge.tech` | Used for share links + OpenRouter `HTTP-Referer`. |
 
 ### Local Development
 
 ```bash
 cp .env.local.example .env.local
-# Fill in: GEMINI_API_KEY, GEMINI_MODEL, OPENROUTER_API_KEY, NEXT_PUBLIC_APP_URL
+# Fill in: GEMINI_API_KEY, GEMINI_MODEL, NVIDIA_NIM_API_KEY (or OPENROUTER_API_KEY), NEXT_PUBLIC_APP_URL
 ```
 
 ### Sync via Vercel CLI
 
 ```bash
 # Add (or update) the keys for production
-vercel env add GEMINI_API_KEY production
-vercel env add GEMINI_MODEL production
-vercel env add OPENROUTER_API_KEY production
-# Optional override
-vercel env add OPENROUTER_NVIDIA_MODEL production
+vercel env add GEMINI_API_KEY production --value "AIza..." --yes
+vercel env add GEMINI_MODEL production --value "gemini-2.5-flash" --yes
+vercel env add NVIDIA_NIM_API_KEY production --value "nvapi-..." --yes
+# Optional secondary transport / overrides
+vercel env add OPENROUTER_API_KEY production --value "sk-or-v1-..." --yes
 
 # Remove the legacy keys if they're still configured
-vercel env rm ANTHROPIC_API_KEY production
-vercel env rm GOOGLE_AI_API_KEY production
+vercel env rm ANTHROPIC_API_KEY production --yes
+vercel env rm GOOGLE_AI_API_KEY production --yes
 ```
 
 ## Vercel Setup
@@ -155,10 +161,11 @@ Requires `output: "standalone"` in `next.config.js`.
 | Issue | Fix |
 |-------|-----|
 | Build fails | Run `npm run build` locally first; check TypeScript errors |
-| Gemini 503 "high demand" | Transient — automatic fallback to NVIDIA fires; if OpenRouter key is also down the route returns 502 |
+| Gemini 429 / 503 | Free tier is 20 req/day for `gemini-2.5-flash`. Either upgrade billing at [aistudio.google.com](https://aistudio.google.com/apikey) or rely on NVIDIA fallback. |
 | Gemini 401 / 403 | Rotate at [aistudio.google.com/apikey](https://aistudio.google.com/apikey); fallback to NVIDIA fires automatically |
 | NVIDIA timeout on Hobby | Vercel Hobby max is 10s; Nemotron 253B routinely exceeds — upgrade to Pro (Gemini default avoids this) |
-| OpenRouter 401 / 402 | Key invalid or out of credits — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); Gemini stays as primary |
+| NIM 401 | Rotate at [build.nvidia.com](https://build.nvidia.com/) → Get API Key. The provider auto-falls-back to OpenRouter if the NIM key is removed. |
+| OpenRouter 401 / 402 | Key invalid or out of credits — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); NIM transport (if configured) takes over. |
 | API key errors | Verify env vars in Vercel Dashboard > Settings > Environment Variables |
 | `maxDuration` ignored | Only works on Pro/Enterprise tier |
 | CORS errors | API routes are server-side; ensure client calls `/api/analyze` not AI APIs directly |

@@ -43,8 +43,10 @@ Fill in your API keys in `.env.local`:
 |----------|----------------|
 | `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — used for Gemini (primary / default). Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
 | `GEMINI_MODEL` | _(optional)_ override the Gemini model slug. Defaults to `gemini-2.5-flash` |
-| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — used for NVIDIA Nemotron (automatic fallback) |
-| `OPENROUTER_NVIDIA_MODEL` | _(optional)_ override the NVIDIA model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
+| `NVIDIA_NIM_API_KEY` | [build.nvidia.com](https://build.nvidia.com/) → "Get API Key" — **preferred** transport for NVIDIA Nemotron (free ~1000 req/month, direct API). Format `nvapi-...` |
+| `NVIDIA_NIM_MODEL` | _(optional)_ override the NIM model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
+| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — fallback transport (used only if NIM key absent) |
+| `OPENROUTER_NVIDIA_MODEL` | _(optional)_ override the OpenRouter model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
 
 ### 3. Run dev server
 
@@ -63,11 +65,13 @@ User inputs URL + picks provider
         ↓
 /api/analyze (Next.js API Route, Zod-validated)
         ↓
-GeminiProvider (gemini-2.5-flash, JSON mode)        ← primary / default
+GeminiProvider (gemini-2.5-flash, JSON mode)         ← primary / default
         │
-        │  on failure (timeout, 5xx, parse error…)
+        │  on failure (429, 5xx, parse error…)
         ↓
-NvidiaProvider (OpenRouter → Nemotron Ultra 253B)   ← automatic fallback
+NvidiaProvider → Nemotron Ultra 253B                 ← automatic fallback
+   • prefers NIM transport         (NVIDIA_NIM_API_KEY)
+   • falls back to OpenRouter      (OPENROUTER_API_KEY)
         ↓
 Shared JSON schema via prompts.ts
         ↓
@@ -110,8 +114,8 @@ ycworthy/
     └── lib/
         ├── types.ts             ← Shared TypeScript types + constants
         ├── prompts.ts           ← System prompt (shared by both providers)
-        ├── nvidia.ts            ← NvidiaProvider (OpenRouter → Nemotron Ultra 253B)
-        ├── gemini.ts            ← GeminiProvider (gemini-2.5-flash, JSON mode)
+        ├── nvidia.ts            ← NvidiaProvider (NIM preferred, OpenRouter fallback → Nemotron Ultra 253B)
+        ├── gemini.ts            ← GeminiProvider (gemini-2.5-flash, native fetch, thinkingBudget=0)
         └── history.ts           ← localStorage history utilities
 ```
 
@@ -133,14 +137,15 @@ ycworthy/
 
 ## AI Provider Comparison
 
-| Feature | Gemini 2.5 Flash | NVIDIA Nemotron Ultra 253B (via OpenRouter) |
-|---------|------------------|---------------------------------------------|
+| Feature | Gemini 2.5 Flash | NVIDIA Nemotron Ultra 253B |
+|---------|------------------|----------------------------|
 | Role | Primary / default | Automatic fallback |
 | Reasoning | Fast, cost-efficient, strong JSON adherence | Top-tier 253B reasoning model |
 | JSON mode | `responseMimeType: application/json` | `response_format: json_object` |
 | Speed | ~3–6s | ~8–18s |
-| API surface | `@google/generative-ai` SDK | OpenAI-compatible (native `fetch`) |
-| Override | `GEMINI_MODEL` env var | `OPENROUTER_NVIDIA_MODEL` env var |
+| Transport | Direct REST API (native `fetch`) | NIM (preferred) → OpenRouter (fallback), both OpenAI-compatible (native `fetch`) |
+| API key | `GEMINI_API_KEY` | `NVIDIA_NIM_API_KEY` (preferred) or `OPENROUTER_API_KEY` |
+| Model override | `GEMINI_MODEL` | `NVIDIA_NIM_MODEL` / `OPENROUTER_NVIDIA_MODEL` |
 
 ---
 
@@ -155,8 +160,8 @@ vercel
 Add environment variables in Vercel Dashboard → Settings → Environment Variables:
 - `GEMINI_API_KEY` _(required — Gemini primary)_
 - `GEMINI_MODEL` _(optional override, defaults to `gemini-2.5-flash`)_
-- `OPENROUTER_API_KEY` _(required — NVIDIA fallback)_
-- `OPENROUTER_NVIDIA_MODEL` _(optional override)_
+- `NVIDIA_NIM_API_KEY` _(preferred NVIDIA fallback transport)_ **or** `OPENROUTER_API_KEY` _(secondary NVIDIA fallback transport)_ — at least one is required
+- `NVIDIA_NIM_MODEL` / `OPENROUTER_NVIDIA_MODEL` _(optional model overrides)_
 
 Then redeploy:
 
@@ -175,8 +180,8 @@ vercel --prod
 
 - **Next.js 14** App Router, TypeScript strict
 - **Tailwind CSS** — Dark theme with custom YC palette
-- **Google Generative AI** — Gemini 2.5 Flash with JSON mode as the primary / default provider
-- **OpenRouter (native `fetch`)** — NVIDIA Nemotron Ultra 253B as the automatic fallback
+- **Google Gemini 2.5 Flash** — primary / default, called via the Generative Language REST API with `thinkingBudget: 0`
+- **NVIDIA Nemotron Ultra 253B** — automatic fallback, served via NVIDIA NIM (preferred) or OpenRouter (secondary), both via native `fetch`
 - **Zod** — API request validation
 - **Framer Motion** — Animation library
 - **clsx** — Conditional class names

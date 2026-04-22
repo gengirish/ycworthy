@@ -64,36 +64,49 @@ const model = this.genAI.getGenerativeModel({
 
 ## NVIDIA Provider (`src/lib/nvidia.ts`) — automatic fallback
 
-- **API**: OpenRouter chat-completions (OpenAI-compatible) via native `fetch`
-- **Model**: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (override via `OPENROUTER_NVIDIA_MODEL`)
-- **Endpoint**: `https://openrouter.ai/api/v1/chat/completions`
-- **Auth**: `Authorization: Bearer ${OPENROUTER_API_KEY}`
-- **Recommended headers**: `HTTP-Referer` + `X-Title` for OpenRouter ranking attribution
+The provider supports **two OpenAI-compatible transports** for the same
+`nvidia/llama-3.1-nemotron-ultra-253b-v1` model. It picks one at construction
+time based on which env vars are present, in this preference order:
+
+1. **NVIDIA NIM (preferred)** — direct NVIDIA inference API
+   - Endpoint: `https://integrate.api.nvidia.com/v1/chat/completions`
+   - Auth: `Authorization: Bearer ${NVIDIA_NIM_API_KEY}` (`nvapi-...`)
+   - Free tier: ~1000 req/month with a personal key from [build.nvidia.com](https://build.nvidia.com/)
+   - Model override: `NVIDIA_NIM_MODEL`
+
+2. **OpenRouter (used only if NIM key absent)**
+   - Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+   - Auth: `Authorization: Bearer ${OPENROUTER_API_KEY}` (`sk-or-v1-...`)
+   - Recommended headers: `HTTP-Referer` + `X-Title` for ranking attribution
+   - Model override: `OPENROUTER_NVIDIA_MODEL`
+
+Shared knobs across both transports:
 - **Max tokens**: 2048
 - **Temperature**: 0.4
 - **JSON enforcement**: `response_format: { type: "json_object" }`
 
 ```typescript
-const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    "Content-Type": "application/json",
+// Constructor selects transport at instantiation time.
+const nimKey = process.env.NVIDIA_NIM_API_KEY;
+const orKey  = process.env.OPENROUTER_API_KEY;
+
+if (nimKey) {
+  endpoint = "https://integrate.api.nvidia.com/v1/chat/completions";
+  apiKey   = nimKey;
+  model    = process.env.NVIDIA_NIM_MODEL ?? DEFAULT_MODEL;
+} else if (orKey) {
+  endpoint = "https://openrouter.ai/api/v1/chat/completions";
+  apiKey   = orKey;
+  model    = process.env.OPENROUTER_NVIDIA_MODEL ?? DEFAULT_MODEL;
+  extraHeaders = {
     "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://ycworthy.intelliforge.tech",
     "X-Title": "YCWorthy",
-  },
-  body: JSON.stringify({
-    model: process.env.OPENROUTER_NVIDIA_MODEL ?? "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: USER_PROMPT(url) },
-    ],
-    temperature: 0.4,
-    max_tokens: 2048,
-    response_format: { type: "json_object" },
-  }),
-});
+  };
+}
 ```
+
+The route uses the helper `hasAnyNvidiaKey()` (exported from `nvidia.ts`) when
+deciding whether the NVIDIA leg of the chain is reachable.
 
 ## Route-Level Fallback (`src/app/api/analyze/route.ts`)
 
@@ -186,15 +199,18 @@ function parseJSON(raw: string): AnalysisResult {
 | Issue | Fix |
 |-------|-----|
 | "GEMINI_API_KEY (or legacy GOOGLE_AI_API_KEY) is not configured" | Add the key to `.env.local` and to Vercel env vars |
-| Gemini 401 / 403 | Key invalid or quota exhausted — rotate at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| Gemini 503 "high demand" | Transient — fallback to NVIDIA will kick in automatically |
+| Gemini 401 / 403 | Key invalid or revoked — rotate at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| Gemini 429 RESOURCE_EXHAUSTED | Free tier is 20 req/day for `gemini-2.5-flash` — upgrade billing or wait for reset; NVIDIA fallback kicks in either way |
+| Gemini 503 "high demand" | Transient — fallback to NVIDIA fires automatically |
+| Gemini returns no text (finishReason MAX_TOKENS, no candidates) | `thinkingBudget: 0` is required for 2.5 Flash — already set in `gemini.ts` |
 | Gemini returns non-JSON | `responseMimeType` should enforce it; `parseJSON` regex fallback applies |
-| "OPENROUTER_API_KEY is not configured" | Add the key to `.env.local` and to Vercel env vars |
-| OpenRouter 401 | Key invalid or revoked — rotate at [openrouter.ai/keys](https://openrouter.ai/keys) |
+| "No NVIDIA transport configured" | Set `NVIDIA_NIM_API_KEY` (preferred) or `OPENROUTER_API_KEY` |
+| NIM 401 | Rotate at [build.nvidia.com](https://build.nvidia.com/) → Get API Key. If you remove the NIM key the provider auto-uses OpenRouter. |
+| OpenRouter 401 | Key invalid or revoked — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); NIM transport (if configured) takes over |
 | OpenRouter 402 | Out of credits — top up at [openrouter.ai/credits](https://openrouter.ai/credits) |
 | OpenRouter 429 | Rate-limited — primary (Gemini) handles the load anyway |
 | Nemotron returns non-JSON | `parseJSON` regex fallback salvages the first `{…}` block |
-| All providers fail | Route returns `502` with the last provider's error message |
+| All providers fail | Route returns `502` with `error` (joined messages) + `provider_errors` map for diagnostics |
 | Timeout on Vercel Hobby | Max 10s on Hobby — use Vercel Pro (route already declares `maxDuration = 60`) |
 
 ## Key Rules

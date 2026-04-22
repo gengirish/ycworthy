@@ -17,7 +17,7 @@ YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup 
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS 3.4 |
 | Animation | Framer Motion 12, CSS keyframes |
-| AI Providers | Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B via OpenRouter (automatic fallback) |
+| AI Providers | Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B (automatic fallback — NIM preferred, OpenRouter secondary) |
 | Validation | Zod |
 | Class Utils | clsx |
 | Deployment | Vercel |
@@ -58,7 +58,7 @@ ycworthy/
         ├── types.ts             # AnalysisResult, Grade, AIProvider, constants
         ├── criteria.tsx         # CRITERIA_META + Lucide icon components
         ├── prompts.ts           # System prompt shared by both AI providers
-        ├── nvidia.ts            # NvidiaProvider (OpenRouter → Nemotron Ultra 253B)
+        ├── nvidia.ts            # NvidiaProvider (NIM preferred, OpenRouter fallback → Nemotron Ultra 253B)
         ├── gemini.ts            # GeminiProvider (gemini-2.5-flash, JSON mode)
         └── history.ts           # localStorage history utilities
 ```
@@ -135,6 +135,8 @@ User inputs URL + picks provider (page.tsx)
 |----------|-------|---------|
 | `GEMINI_API_KEY` | Server | Gemini API key (primary / default). Required. Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
 | `GEMINI_MODEL` | Server | _Optional_ override for the Gemini model slug. Defaults to `gemini-2.5-flash`. |
-| `OPENROUTER_API_KEY` | Server | NVIDIA Nemotron via OpenRouter (automatic fallback). Required. |
-| `OPENROUTER_NVIDIA_MODEL` | Server | _Optional_ override for the NVIDIA model slug. |
+| `NVIDIA_NIM_API_KEY` | Server | **Preferred** NVIDIA fallback transport — direct NVIDIA inference API (`nvapi-...`). |
+| `NVIDIA_NIM_MODEL` | Server | _Optional_ override for the NIM model slug. |
+| `OPENROUTER_API_KEY` | Server | Secondary NVIDIA fallback transport — used only if `NVIDIA_NIM_API_KEY` is absent. At least one of NIM / OpenRouter must be set. |
+| `OPENROUTER_NVIDIA_MODEL` | Server | _Optional_ override for the OpenRouter model slug. |
 | `NEXT_PUBLIC_APP_URL` | Client | App URL for share links + OpenRouter `HTTP-Referer`. |

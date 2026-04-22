@@ -1,7 +1,7 @@
 # YCWorthy — Cursor Playbook
 
 > AI-powered Y Combinator startup evaluator  
-> Stack: Next.js 14 · TypeScript · Claude Sonnet 4 · Gemini 1.5 Pro · Vercel
+> Stack: Next.js 14 · TypeScript · Gemini 2.5 Flash (primary) · NVIDIA Nemotron Ultra 253B (fallback via NIM or OpenRouter) · Vercel
 
 ---
 
@@ -10,10 +10,15 @@
 ```
 User inputs URL + picks provider
         ↓
-/api/analyze (Next.js API Route)
+/api/analyze (Next.js API Route, Zod-validated)
         ↓
-ClaudeProvider  ──OR──  GeminiProvider
-(web_search tool)       (JSON mode)
+GeminiProvider (gemini-2.5-flash, JSON mode, thinkingBudget=0)   ← primary / default
+        │
+        │  on failure (429, 5xx, parse error…)
+        ↓
+NvidiaProvider → Nemotron Ultra 253B                              ← automatic fallback
+   • prefers NIM transport       (NVIDIA_NIM_API_KEY)
+   • falls back to OpenRouter    (OPENROUTER_API_KEY)
         ↓
 Shared JSON schema via prompts.ts
         ↓
@@ -44,7 +49,7 @@ ycworthy/
     │           └── route.ts         ← POST /api/analyze
     │
     ├── components/
-    │   ├── ModelToggle.tsx          ← Claude / Gemini switcher
+    │   ├── ModelToggle.tsx          ← Gemini / NVIDIA switcher
     │   ├── GradeRing.tsx            ← Animated grade circle (S/A/B/C/D/F)
     │   ├── CriteriaGrid.tsx         ← 6-criteria score cards
     │   └── ResultCard.tsx           ← Full results layout
@@ -55,8 +60,8 @@ ycworthy/
     └── lib/
         ├── types.ts                 ← All shared TypeScript types + constants
         ├── prompts.ts               ← Shared system prompt (both providers)
-        ├── claude.ts                ← ClaudeProvider (Sonnet 4 + web_search)
-        └── gemini.ts                ← GeminiProvider (1.5 Pro + JSON mode)
+        ├── nvidia.ts                ← NvidiaProvider (NIM preferred, OpenRouter fallback → Nemotron Ultra 253B)
+        └── gemini.ts                ← GeminiProvider (gemini-2.5-flash, native fetch, thinkingBudget=0)
 ```
 
 ---
@@ -95,12 +100,25 @@ npm run dev
 
 > Default model: `gemini-2.5-flash`. Reliable JSON output via `responseMimeType: "application/json"`. Legacy `GOOGLE_AI_API_KEY` is still accepted for backward compat.
 
-### OpenRouter (NVIDIA Nemotron — automatic fallback)
+### NVIDIA Nemotron — automatic fallback (pick one transport)
+
+The NVIDIA provider supports two OpenAI-compatible transports for the same
+`nvidia/llama-3.1-nemotron-ultra-253b-v1` model. **NIM is preferred** because
+it's a direct API with a generous free tier; OpenRouter is the secondary path.
+
+#### Option A — NVIDIA NIM (preferred, ~1000 req/month free)
+1. Go to https://build.nvidia.com/
+2. Click any model → **Get API Key** → copy the `nvapi-...` token
+3. Paste into `.env.local` as `NVIDIA_NIM_API_KEY=nvapi-...`
+4. (Optional) Pin a model via `NVIDIA_NIM_MODEL=nvidia/llama-3.1-nemotron-ultra-253b-v1`
+
+#### Option B — OpenRouter (secondary; used only if NIM key is absent)
 1. Go to https://openrouter.ai/keys
 2. Create a new API key (`sk-or-v1-...`)
 3. Paste into `.env.local` as `OPENROUTER_API_KEY=sk-or-v1-...`
+4. (Optional) Override via `OPENROUTER_NVIDIA_MODEL=...`
 
-> Default model: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (NVIDIA's largest reasoning model). Override with `OPENROUTER_NVIDIA_MODEL=...` for a smaller/cheaper Nemotron variant. Kicks in automatically if Gemini errors or 503s.
+> The NVIDIA leg of the chain kicks in automatically if Gemini errors, 429s, or 503s.
 
 ---
 
@@ -120,7 +138,9 @@ vercel
 #    → Settings → Environment Variables
 #    GEMINI_API_KEY            = AIza...        (required, Gemini primary)
 #    GEMINI_MODEL              = gemini-2.5-flash                              (optional override)
-#    OPENROUTER_API_KEY        = sk-or-v1-...   (required, NVIDIA fallback)
+#    NVIDIA_NIM_API_KEY        = nvapi-...      (preferred NVIDIA fallback transport)
+#    NVIDIA_NIM_MODEL          = nvidia/llama-3.1-nemotron-ultra-253b-v1     (optional override)
+#    OPENROUTER_API_KEY        = sk-or-v1-...   (secondary NVIDIA fallback transport — used only if NIM absent)
 #    OPENROUTER_NVIDIA_MODEL   = nvidia/llama-3.1-nemotron-ultra-253b-v1     (optional override)
 
 # 5. Redeploy to apply env vars
@@ -150,7 +170,7 @@ Follow the dark theme from page.tsx.
 ### Add share / permalink
 ```
 After analysis, add a "Share" button that copies a URL like:
-/?url=https://example.com&provider=claude
+/?url=https://example.com&provider=gemini
 On page load, if ?url param exists, auto-trigger analysis.
 Use Next.js useSearchParams and useRouter from next/navigation.
 ```
@@ -190,7 +210,7 @@ Filename: ycworthy-[company-slug]-[date].pdf
 | Feature | Free | Pro ($9/mo) |
 |---------|------|-------------|
 | Analyses per day | 3 | Unlimited |
-| Provider choice | Claude only | Claude + Gemini |
+| Provider choice | Gemini only | Gemini + NVIDIA Nemotron |
 | PDF export | ✗ | ✓ |
 | Shareable permalink | ✓ | ✓ |
 | Batch analysis (CSV) | ✗ | ✓ |
@@ -202,29 +222,35 @@ Filename: ycworthy-[company-slug]-[date].pdf
 
 ## How the Providers Differ
 
-| Feature | Claude Sonnet 4 | Gemini 1.5 Pro |
-|---------|-----------------|----------------|
-| Web search | ✓ Native tool | ✗ (knowledge only) |
-| JSON mode | Parse text | `responseMimeType` |
-| Speed | ~12–20s (with search) | ~4–8s |
-| Quality | Higher (live data) | Good (training data) |
-| Cost | ~$0.003/analysis | ~$0.001/analysis |
+| Feature | Gemini 2.5 Flash (primary) | NVIDIA Nemotron Ultra 253B (fallback) |
+|---------|----------------------------|----------------------------------------|
+| Transport | Direct REST (`generateContent`) via native `fetch` | NIM (preferred) → OpenRouter (secondary), both OpenAI-compatible chat-completions via native `fetch` |
+| JSON mode | `responseMimeType: application/json` + `thinkingBudget: 0` | `response_format: { type: "json_object" }` |
+| Speed | ~3–6s | ~8–18s |
+| Quality | Fast, strong instruction following | Top-tier 253B reasoning |
+| Cost | Free tier 20 req/day on `2.5-flash`; otherwise ~$0.0005/analysis | NIM free tier ~1000 req/month; OpenRouter ~$0.003/analysis |
 
 ---
 
 ## Troubleshooting
 
-### "No text response from Claude"
-Claude returned only tool_use blocks. The `textBlock` filter in `claude.ts` gets the last text block — ensure the model finishes with text. If it doesn't, add `tool_choice: { type: "auto" }` to force it.
+### Gemini returns no text (finishReason MAX_TOKENS, no candidates)
+2.5 Flash is a thinking model — without `thinkingConfig: { thinkingBudget: 0 }` it spends the entire output budget on internal reasoning. Already set in `src/lib/gemini.ts`; do not remove.
+
+### Gemini 429 RESOURCE_EXHAUSTED
+Free tier is 20 req/day for `gemini-2.5-flash`. Either upgrade billing at [aistudio.google.com](https://aistudio.google.com/apikey) or rely on the NVIDIA fallback.
 
 ### Gemini returns non-JSON
-`responseMimeType: "application/json"` should enforce JSON. If it still fails, the `parseJSON()` fallback extracts the first `{...}` block. Check Gemini model availability for your region.
+`responseMimeType: "application/json"` should enforce JSON. If it still fails, the `parseJSON()` fallback extracts the first `{...}` block.
+
+### "No NVIDIA transport configured"
+Set `NVIDIA_NIM_API_KEY` (preferred) or `OPENROUTER_API_KEY`. The provider auto-picks NIM when both are present.
+
+### NIM 401 / OpenRouter 401
+Rotate the corresponding key. If you remove the NIM key entirely the provider auto-falls-back to OpenRouter; the reverse also works.
 
 ### `maxDuration = 60` not working
-This requires Vercel Pro/Enterprise. On Hobby, max is 10s — Claude with web search may timeout. Switch to Gemini for Hobby-tier Vercel, or set `maxDuration = 10` in the route.
-
-### CORS errors in local dev
-API routes are server-side — no CORS needed. If you see CORS errors, you're calling the Anthropic API directly from the client. Move all API calls to `/api/analyze`.
+Requires Vercel Pro/Enterprise. On Hobby, max is 10s — Nemotron 253B may timeout. Gemini default avoids this.
 
 ---
 
@@ -233,7 +259,7 @@ API routes are server-side — no CORS needed. If you see CORS errors, you're ca
 ```typescript
 type Grade = "S" | "A" | "B" | "C" | "D" | "F";
 type YCLikelihood = "Unlikely" | "Possible" | "Probable" | "Strong";
-type AIProvider = "claude" | "gemini";
+type AIProvider = "nvidia" | "gemini";
 
 interface AnalysisResult {
   company: string;

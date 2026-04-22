@@ -23,8 +23,11 @@
 
 ## AI Provider Rules
 - Both providers implement the same `AnalysisProvider` interface in `src/lib/types.ts`
-- Gemini (primary / default): `@google/generative-ai` with `gemini-2.5-flash` (overridable via `GEMINI_MODEL`). Reads `GEMINI_API_KEY` (legacy `GOOGLE_AI_API_KEY` still accepted as fallback).
-- NVIDIA (fallback): OpenRouter chat-completions API with `nvidia/llama-3.1-nemotron-ultra-253b-v1` (overridable via `OPENROUTER_NVIDIA_MODEL`). Use native `fetch` — no SDK.
+- Gemini (primary / default): native `fetch` against the Generative Language REST API with `gemini-2.5-flash` (overridable via `GEMINI_MODEL`). Reads `GEMINI_API_KEY` (legacy `GOOGLE_AI_API_KEY` still accepted as fallback). Always sets `thinkingConfig: { thinkingBudget: 0 }` because 2.5 Flash is a thinking model that otherwise consumes the entire output budget on internal reasoning.
+- NVIDIA (fallback): OpenAI-compatible chat-completions with `nvidia/llama-3.1-nemotron-ultra-253b-v1`. Two transports — preferred order:
+  1. **NVIDIA NIM** (direct, preferred) — `https://integrate.api.nvidia.com/v1/chat/completions`, auth `Bearer ${NVIDIA_NIM_API_KEY}` (`nvapi-...`), model overridable via `NVIDIA_NIM_MODEL`.
+  2. **OpenRouter** (used only if NIM key is absent) — `https://openrouter.ai/api/v1/chat/completions`, auth `Bearer ${OPENROUTER_API_KEY}` (`sk-or-v1-...`), model overridable via `OPENROUTER_NVIDIA_MODEL`. Always set `HTTP-Referer` + `X-Title` for ranking attribution.
+- Use native `fetch` for ALL providers — no SDKs.
 - `/api/analyze` defaults `provider` to `"gemini"`. It always tries the requested provider first, then automatically falls back to the other if it errors. Response includes `fallback_used` and `X-Provider-Fallback` header.
 - System prompt lives in `src/lib/prompts.ts` — shared between both providers
 - Always ask for JSON output; strip markdown fences before `JSON.parse()`
@@ -47,8 +50,11 @@
 ## Environment Variables
 - `GEMINI_API_KEY` — required for Gemini (primary). Legacy `GOOGLE_AI_API_KEY` still works as a fallback.
 - `GEMINI_MODEL` — optional override for the Gemini model slug (default `gemini-2.5-flash`)
-- `OPENROUTER_API_KEY` — required for NVIDIA Nemotron (automatic fallback)
-- `OPENROUTER_NVIDIA_MODEL` — optional override for the NVIDIA model slug
+- `NVIDIA_NIM_API_KEY` — preferred transport for NVIDIA Nemotron (direct, free tier ~1000 req/month)
+- `NVIDIA_NIM_MODEL` — optional override for the NIM model slug
+- `OPENROUTER_API_KEY` — fallback transport for NVIDIA Nemotron (used only if NIM key absent)
+- `OPENROUTER_NVIDIA_MODEL` — optional override for the OpenRouter model slug
+- At least one NVIDIA transport (`NVIDIA_NIM_API_KEY` or `OPENROUTER_API_KEY`) must be set for the fallback chain to function
 - Never read env vars in client components — only in API routes and server components
 
 ## Do NOT

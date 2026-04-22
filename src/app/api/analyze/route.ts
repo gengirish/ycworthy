@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { NvidiaProvider } from "@/lib/nvidia";
+import { NvidiaProvider, hasAnyNvidiaKey } from "@/lib/nvidia";
 import { GeminiProvider } from "@/lib/gemini";
 import { AIProvider, AnalysisProvider, AnalysisResult } from "@/lib/types";
 
@@ -22,7 +22,8 @@ function hasGeminiKey(): boolean {
 }
 
 function hasNvidiaKey(): boolean {
-  return Boolean(process.env.OPENROUTER_API_KEY);
+  // True when EITHER NVIDIA NIM (preferred) or OpenRouter is configured.
+  return hasAnyNvidiaKey();
 }
 
 interface RunResult {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "No AI provider configured. Set GEMINI_API_KEY (primary) and/or OPENROUTER_API_KEY (NVIDIA fallback).",
+          "No AI provider configured. Set GEMINI_API_KEY (primary) and/or NVIDIA_NIM_API_KEY (preferred) or OPENROUTER_API_KEY (NVIDIA fallback transports).",
       },
       { status: 500 }
     );
