@@ -1,6 +1,6 @@
 ---
 name: ycworthy-ai-providers
-description: Orchestrate AI analysis with NVIDIA Nemotron (primary, via OpenRouter) and Google Gemini (automatic fallback). Covers prompt engineering, JSON parsing, the AnalysisProvider abstraction, and the route-level fallback chain. Use when working with AI integration, prompts, adding new providers, or debugging AI response parsing.
+description: Orchestrate AI analysis with Google Gemini (primary / default) and NVIDIA Nemotron via OpenRouter (automatic fallback). Covers prompt engineering, JSON parsing, the AnalysisProvider abstraction, and the route-level fallback chain. Use when working with AI integration, prompts, adding new providers, or debugging AI response parsing.
 ---
 
 # YCWorthy AI Providers
@@ -9,20 +9,20 @@ description: Orchestrate AI analysis with NVIDIA Nemotron (primary, via OpenRout
 
 ## Architecture
 
-Both providers implement the `AnalysisProvider` interface and share the same system prompt. The API route always tries the requested provider first and automatically falls back to the other on failure.
+Both providers implement the `AnalysisProvider` interface and share the same system prompt. The API route always tries the requested provider first and automatically falls back to the other on failure. **Gemini is the default** — `provider` field defaults to `"gemini"` in the Zod schema.
 
 ```
-POST /api/analyze
+POST /api/analyze   (provider defaults to "gemini")
         ↓
-order = requested === "gemini" ? ["gemini", "nvidia"] : ["nvidia", "gemini"]
+order = requested === "nvidia" ? ["nvidia", "gemini"] : ["gemini", "nvidia"]
         ↓
 for provider of order:
     try analyzer.analyze(url) → return { data, provider, fallback_used }
     catch → log + try next provider
         ↓
-NvidiaProvider                            GeminiProvider
-(OpenRouter, native fetch,                (@google/generative-ai SDK,
- nvidia/llama-3.1-nemotron-ultra-253b-v1)  gemini-2.5-flash, JSON mode)
+GeminiProvider                            NvidiaProvider
+(@google/generative-ai SDK,               (OpenRouter, native fetch,
+ gemini-2.5-flash, JSON mode)              nvidia/llama-3.1-nemotron-ultra-253b-v1)
         ↓                                       ↓
               Parse JSON (shared parseJSON helper)
                               ↓
@@ -40,7 +40,29 @@ export interface AnalysisProvider {
 }
 ```
 
-## NVIDIA Provider (`src/lib/nvidia.ts`) — primary
+## Gemini Provider (`src/lib/gemini.ts`) — primary / default
+
+- **API**: `@google/generative-ai` SDK
+- **API key**: reads `GEMINI_API_KEY` first, falls back to legacy `GOOGLE_AI_API_KEY`
+- **Model**: `gemini-2.5-flash` (override via `GEMINI_MODEL`)
+- **Feature**: `responseMimeType: "application/json"` for native JSON mode
+- **Temperature**: 0.4
+- **Max tokens**: 4096
+
+```typescript
+const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
+const model = this.genAI.getGenerativeModel({
+  model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  systemInstruction: SYSTEM_PROMPT,
+  generationConfig: {
+    maxOutputTokens: 4096,
+    temperature: 0.4,
+    responseMimeType: "application/json",
+  },
+});
+```
+
+## NVIDIA Provider (`src/lib/nvidia.ts`) — automatic fallback
 
 - **API**: OpenRouter chat-completions (OpenAI-compatible) via native `fetch`
 - **Model**: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (override via `OPENROUTER_NVIDIA_MODEL`)
@@ -73,40 +95,28 @@ const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 });
 ```
 
-## Gemini Provider (`src/lib/gemini.ts`) — automatic fallback
-
-- **Model**: `gemini-2.5-flash`
-- **Feature**: `responseMimeType: "application/json"` for native JSON
-- **Temperature**: 0.4
-- **Max tokens**: 4096
-
-```typescript
-const model = this.genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
-  systemInstruction: SYSTEM_PROMPT,
-  generationConfig: {
-    maxOutputTokens: 4096,
-    temperature: 0.4,
-    responseMimeType: "application/json",
-  },
-});
-```
-
 ## Route-Level Fallback (`src/app/api/analyze/route.ts`)
 
 ```typescript
 const order: AIProvider[] =
-  requested === "gemini" ? ["gemini", "nvidia"] : ["nvidia", "gemini"];
+  requested === "nvidia" ? ["nvidia", "gemini"] : ["gemini", "nvidia"];
 
 for (let i = 0; i < order.length; i++) {
   const provider = order[i];
   // skip if env var missing
-  if (provider === "nvidia" && !process.env.OPENROUTER_API_KEY) continue;
-  if (provider === "gemini" && !process.env.GOOGLE_AI_API_KEY) continue;
+  if (provider === "nvidia" && !hasNvidiaKey()) continue;
+  if (provider === "gemini" && !hasGeminiKey()) continue;
   try {
     const data = await tryRun(provider, url);
     return { data, provider, fallback_used: i > 0 };
   } catch (err) { lastError = err; }
+}
+
+function hasGeminiKey() {
+  return Boolean(process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY);
+}
+function hasNvidiaKey() {
+  return Boolean(process.env.OPENROUTER_API_KEY);
 }
 ```
 
@@ -162,25 +172,28 @@ function parseJSON(raw: string): AnalysisResult {
 
 ## Provider Comparison
 
-| Feature | NVIDIA Nemotron Ultra 253B | Gemini 2.5 Flash |
-|---------|----------------------------|------------------|
-| Role | Primary | Automatic fallback |
-| API | OpenRouter (native fetch) | `@google/generative-ai` SDK |
-| JSON mode | `response_format: json_object` | `responseMimeType: "application/json"` |
-| Speed | ~8–18s | ~3–6s |
-| Reasoning quality | Top-tier (253B params) | Fast, cost-efficient |
-| Override | `OPENROUTER_NVIDIA_MODEL` | _(none)_ |
+| Feature | Gemini 2.5 Flash | NVIDIA Nemotron Ultra 253B |
+|---------|------------------|----------------------------|
+| Role | Primary / default | Automatic fallback |
+| API | `@google/generative-ai` SDK | OpenRouter (native fetch) |
+| JSON mode | `responseMimeType: "application/json"` | `response_format: json_object` |
+| Speed | ~3–6s | ~8–18s |
+| Reasoning quality | Fast, cost-efficient | Top-tier (253B params) |
+| Override | `GEMINI_MODEL` | `OPENROUTER_NVIDIA_MODEL` |
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
+| "GEMINI_API_KEY (or legacy GOOGLE_AI_API_KEY) is not configured" | Add the key to `.env.local` and to Vercel env vars |
+| Gemini 401 / 403 | Key invalid or quota exhausted — rotate at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| Gemini 503 "high demand" | Transient — fallback to NVIDIA will kick in automatically |
+| Gemini returns non-JSON | `responseMimeType` should enforce it; `parseJSON` regex fallback applies |
 | "OPENROUTER_API_KEY is not configured" | Add the key to `.env.local` and to Vercel env vars |
 | OpenRouter 401 | Key invalid or revoked — rotate at [openrouter.ai/keys](https://openrouter.ai/keys) |
 | OpenRouter 402 | Out of credits — top up at [openrouter.ai/credits](https://openrouter.ai/credits) |
-| OpenRouter 429 | Rate-limited — fallback to Gemini will kick in automatically |
+| OpenRouter 429 | Rate-limited — primary (Gemini) handles the load anyway |
 | Nemotron returns non-JSON | `parseJSON` regex fallback salvages the first `{…}` block |
-| Gemini returns non-JSON | `responseMimeType` should enforce it; same regex fallback applies |
 | All providers fail | Route returns `502` with the last provider's error message |
 | Timeout on Vercel Hobby | Max 10s on Hobby — use Vercel Pro (route already declares `maxDuration = 60`) |
 

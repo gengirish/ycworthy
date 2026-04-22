@@ -87,20 +87,20 @@ npm run dev
 
 > Anthropic / Claude has been removed from this project. Do not add `ANTHROPIC_API_KEY` back.
 
-### OpenRouter (NVIDIA Nemotron — primary)
+### Google AI Studio (Gemini — primary / default)
+1. Go to https://aistudio.google.com/apikey
+2. Create a new API key
+3. Paste into `.env.local` as `GEMINI_API_KEY=AIza...`
+4. (Optional) Pin a model via `GEMINI_MODEL=gemini-2.5-flash`
+
+> Default model: `gemini-2.5-flash`. Reliable JSON output via `responseMimeType: "application/json"`. Legacy `GOOGLE_AI_API_KEY` is still accepted for backward compat.
+
+### OpenRouter (NVIDIA Nemotron — automatic fallback)
 1. Go to https://openrouter.ai/keys
 2. Create a new API key (`sk-or-v1-...`)
 3. Paste into `.env.local` as `OPENROUTER_API_KEY=sk-or-v1-...`
 
-> Default model: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (NVIDIA's largest reasoning model).
-> Override with `OPENROUTER_NVIDIA_MODEL=...` if you want a smaller / cheaper Nemotron variant.
-
-### Google AI Studio (Gemini — automatic fallback)
-1. Go to https://aistudio.google.com/apikey
-2. Create a new API key
-3. Paste into `.env.local` as `GOOGLE_AI_API_KEY=AIza...`
-
-> Gemini 2.5 Flash with `responseMimeType: "application/json"` gives reliable structured output and kicks in automatically if NVIDIA fails.
+> Default model: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (NVIDIA's largest reasoning model). Override with `OPENROUTER_NVIDIA_MODEL=...` for a smaller/cheaper Nemotron variant. Kicks in automatically if Gemini errors or 503s.
 
 ---
 
@@ -118,9 +118,10 @@ vercel
 
 # 4. Add env vars in Vercel dashboard
 #    → Settings → Environment Variables
-#    OPENROUTER_API_KEY        = sk-or-v1-...   (required, NVIDIA primary)
-#    GOOGLE_AI_API_KEY         = AIza...        (required, Gemini fallback)
-#    OPENROUTER_NVIDIA_MODEL   = nvidia/llama-3.1-nemotron-ultra-253b-v1   (optional override)
+#    GEMINI_API_KEY            = AIza...        (required, Gemini primary)
+#    GEMINI_MODEL              = gemini-2.5-flash                              (optional override)
+#    OPENROUTER_API_KEY        = sk-or-v1-...   (required, NVIDIA fallback)
+#    OPENROUTER_NVIDIA_MODEL   = nvidia/llama-3.1-nemotron-ultra-253b-v1     (optional override)
 
 # 5. Redeploy to apply env vars
 vercel --prod

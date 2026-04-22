@@ -1,18 +1,35 @@
 // src/lib/gemini.ts
+//
+// Google Gemini provider — currently the **default** for /api/analyze.
+// NVIDIA Nemotron (via OpenRouter) is the automatic fallback.
+//
+// Env vars (in priority order):
+//   GEMINI_API_KEY  (preferred)  — falls back to GOOGLE_AI_API_KEY
+//   GEMINI_MODEL    (preferred)  — defaults to "gemini-2.5-flash"
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisProvider, AnalysisResult } from "./types";
 import { SYSTEM_PROMPT, USER_PROMPT } from "./prompts";
 
+const DEFAULT_MODEL = "gemini-2.5-flash";
+
 export class GeminiProvider implements AnalysisProvider {
-  private genAI: GoogleGenerativeAI;
+  private readonly genAI: GoogleGenerativeAI;
+  private readonly modelName: string;
 
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+    const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "GEMINI_API_KEY (or legacy GOOGLE_AI_API_KEY) is not configured"
+      );
+    }
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.modelName = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
   }
 
   async analyze(url: string): Promise<AnalysisResult> {
     const model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: this.modelName,
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
         maxOutputTokens: 4096,

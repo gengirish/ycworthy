@@ -10,18 +10,18 @@ interface Props {
 
 const PROVIDERS: { id: AIProvider; label: string; sub: string; color: string; activeClasses: string }[] = [
   {
+    id: "gemini",
+    label: "Gemini",
+    sub: "2.5 Flash · Default",
+    color: "#4A9EFF",
+    activeClasses: "border-provider-gemini/35 bg-provider-gemini/[0.08] text-provider-gemini",
+  },
+  {
     id: "nvidia",
     label: "NVIDIA",
     sub: "Nemotron Ultra 253B",
     color: "#76B900",
     activeClasses: "border-provider-nvidia/35 bg-provider-nvidia/[0.08] text-provider-nvidia",
-  },
-  {
-    id: "gemini",
-    label: "Gemini",
-    sub: "2.5 Flash · Fallback",
-    color: "#4A9EFF",
-    activeClasses: "border-provider-gemini/35 bg-provider-gemini/[0.08] text-provider-gemini",
   },
 ];
 

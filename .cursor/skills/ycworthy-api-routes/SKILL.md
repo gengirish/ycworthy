@@ -18,7 +18,7 @@ src/app/api/
 
 ```typescript
 // POST /api/analyze
-// Body: { url: string, provider: "nvidia" | "gemini" }   ← provider defaults to "nvidia"
+// Body: { url: string, provider: "nvidia" | "gemini" }   ← provider defaults to "gemini"
 // Response: { data: AnalysisResult, provider: AIProvider, duration_ms: number, fallback_used: boolean }
 // Error: { error: string }
 // Headers: X-Provider, X-Duration-Ms
@@ -92,7 +92,7 @@ return NextResponse.json({ error: "API key not configured" }, { status: 500 });
 return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
 // Success responses — { data, provider, duration_ms }
-return NextResponse.json({ data: analysisResult, provider: "nvidia", duration_ms: 12340, fallback_used: false });
+return NextResponse.json({ data: analysisResult, provider: "gemini", duration_ms: 4120, fallback_used: false });
 ```
 
 ## Rate Limiting (In-Memory)

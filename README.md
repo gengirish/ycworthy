@@ -2,7 +2,7 @@
 
 > Drop any startup URL. Get a brutal, honest AI evaluation against Y Combinator's real funding criteria.
 >
-> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · NVIDIA Nemotron Ultra 253B (via OpenRouter) · Gemini 2.5 Flash (fallback) · Vercel
+> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Gemini 2.5 Flash (default) · NVIDIA Nemotron Ultra 253B via OpenRouter (fallback) · Vercel
 
 ---
 
@@ -41,9 +41,10 @@ Fill in your API keys in `.env.local`:
 
 | Variable | Where to get it |
 |----------|----------------|
-| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — used for NVIDIA Nemotron (primary) |
+| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — used for Gemini (primary / default). Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
+| `GEMINI_MODEL` | _(optional)_ override the Gemini model slug. Defaults to `gemini-2.5-flash` |
+| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — used for NVIDIA Nemotron (automatic fallback) |
 | `OPENROUTER_NVIDIA_MODEL` | _(optional)_ override the NVIDIA model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
-| `GOOGLE_AI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — used for Gemini (fallback) |
 
 ### 3. Run dev server
 
@@ -62,11 +63,11 @@ User inputs URL + picks provider
         ↓
 /api/analyze (Next.js API Route, Zod-validated)
         ↓
-NvidiaProvider (OpenRouter → Nemotron Ultra 253B)   ← primary
+GeminiProvider (gemini-2.5-flash, JSON mode)        ← primary / default
         │
         │  on failure (timeout, 5xx, parse error…)
         ↓
-GeminiProvider (gemini-2.5-flash, JSON mode)        ← automatic fallback
+NvidiaProvider (OpenRouter → Nemotron Ultra 253B)   ← automatic fallback
         ↓
 Shared JSON schema via prompts.ts
         ↓
@@ -97,7 +98,7 @@ ycworthy/
     │           └── route.ts    ← POST /api/analyze (Zod validated)
     │
     ├── components/
-    │   ├── ModelToggle.tsx      ← NVIDIA / Gemini switcher
+    │   ├── ModelToggle.tsx      ← Gemini / NVIDIA switcher
     │   ├── GradeRing.tsx        ← Animated grade circle (S/A/B/C/D/F)
     │   ├── CriteriaGrid.tsx     ← 6-criteria score cards with bars
     │   ├── ResultCard.tsx       ← Full results layout
@@ -118,13 +119,13 @@ ycworthy/
 
 ## Features
 
-- **NVIDIA-first, Gemini fallback** — Always tries NVIDIA Nemotron Ultra 253B first; if it errors, automatically retries on Gemini 2.5 Flash. Surfaces `fallback_used` in the response.
+- **Gemini-first, NVIDIA fallback** — Always tries Gemini 2.5 Flash first; if it errors, automatically retries on NVIDIA Nemotron Ultra 253B. Surfaces `fallback_used` in the response.
 - **6 YC criteria** — Problem, Market, Solution, Traction, Founder-Market Fit, Timing
 - **Animated grade rings** — Color-coded S through F grades with glow effects
 - **Score bars** — Animated progress bars for each criterion
 - **Recent analyses** — Last 8 analyses stored in localStorage
 - **Share links** — Copy a permalink to share any analysis result
-- **Auto-analyze from URL** — `/?url=example.com&provider=nvidia` triggers analysis on load
+- **Auto-analyze from URL** — `/?url=example.com&provider=gemini` triggers analysis on load
 - **Dark theme** — #080808 background with #FFE048 accent
 - **Mobile-responsive** — Works on 375px+ screens
 
@@ -132,14 +133,14 @@ ycworthy/
 
 ## AI Provider Comparison
 
-| Feature | NVIDIA Nemotron Ultra 253B (via OpenRouter) | Gemini 2.5 Flash |
-|---------|---------------------------------------------|------------------|
-| Role | Primary | Automatic fallback |
-| Reasoning | Top-tier 253B reasoning model | Fast, cost-efficient |
-| JSON mode | `response_format: json_object` | `responseMimeType: application/json` |
-| Speed | ~8–18s | ~3–6s |
-| API surface | OpenAI-compatible (native `fetch`) | `@google/generative-ai` SDK |
-| Override | `OPENROUTER_NVIDIA_MODEL` env var | _(none)_ |
+| Feature | Gemini 2.5 Flash | NVIDIA Nemotron Ultra 253B (via OpenRouter) |
+|---------|------------------|---------------------------------------------|
+| Role | Primary / default | Automatic fallback |
+| Reasoning | Fast, cost-efficient, strong JSON adherence | Top-tier 253B reasoning model |
+| JSON mode | `responseMimeType: application/json` | `response_format: json_object` |
+| Speed | ~3–6s | ~8–18s |
+| API surface | `@google/generative-ai` SDK | OpenAI-compatible (native `fetch`) |
+| Override | `GEMINI_MODEL` env var | `OPENROUTER_NVIDIA_MODEL` env var |
 
 ---
 
@@ -152,8 +153,9 @@ vercel
 ```
 
 Add environment variables in Vercel Dashboard → Settings → Environment Variables:
-- `OPENROUTER_API_KEY` _(required — NVIDIA primary)_
-- `GOOGLE_AI_API_KEY` _(required — Gemini fallback)_
+- `GEMINI_API_KEY` _(required — Gemini primary)_
+- `GEMINI_MODEL` _(optional override, defaults to `gemini-2.5-flash`)_
+- `OPENROUTER_API_KEY` _(required — NVIDIA fallback)_
 - `OPENROUTER_NVIDIA_MODEL` _(optional override)_
 
 Then redeploy:
@@ -173,8 +175,8 @@ vercel --prod
 
 - **Next.js 14** App Router, TypeScript strict
 - **Tailwind CSS** — Dark theme with custom YC palette
-- **OpenRouter (native `fetch`)** — NVIDIA Nemotron Ultra 253B as the primary reasoning model
-- **Google Generative AI** — Gemini 2.5 Flash with JSON mode (automatic fallback)
+- **Google Generative AI** — Gemini 2.5 Flash with JSON mode as the primary / default provider
+- **OpenRouter (native `fetch`)** — NVIDIA Nemotron Ultra 253B as the automatic fallback
 - **Zod** — API request validation
 - **Framer Motion** — Animation library
 - **clsx** — Conditional class names

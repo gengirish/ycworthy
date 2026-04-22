@@ -9,16 +9,16 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 
 ```
 ┌──────────────────┐    API route       ┌────────────────────────┐
-│  Vercel (Next.js) │ ──── primary ───► │  OpenRouter (NVIDIA     │
-│  Frontend + API   │                   │  Nemotron Ultra 253B)   │
+│  Vercel (Next.js) │ ──── primary ───► │  Google AI Studio       │
+│  Frontend + API   │                   │  (Gemini 2.5 Flash)     │
 └──────────────────┘                   └────────────────────────┘
          │                              ┌────────────────────────┐
-         └────── fallback ─────────────►│  Google AI (Gemini      │
-                                       │  2.5 Flash)             │
+         └────── fallback ─────────────►│  OpenRouter (NVIDIA     │
+                                       │  Nemotron Ultra 253B)   │
                                        └────────────────────────┘
 ```
 
-> Anthropic / Claude was removed in favour of NVIDIA Nemotron via OpenRouter. Do not add `ANTHROPIC_API_KEY` back.
+> Anthropic / Claude was removed entirely. Do not add `ANTHROPIC_API_KEY` back.
 
 ## Environment Variables
 
@@ -26,29 +26,32 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `OPENROUTER_API_KEY` | `sk-or-v1-...` | **Required.** NVIDIA Nemotron via OpenRouter (primary). |
-| `OPENROUTER_NVIDIA_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override model slug. |
-| `GOOGLE_AI_API_KEY` | `AIza...` | **Required.** Gemini 2.5 Flash (automatic fallback). |
+| `GEMINI_API_KEY` | `AIza...` | **Required.** Gemini 2.5 Flash (primary / default). Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | _Optional._ Override Gemini model slug. |
+| `OPENROUTER_API_KEY` | `sk-or-v1-...` | **Required.** NVIDIA Nemotron via OpenRouter (automatic fallback). |
+| `OPENROUTER_NVIDIA_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override NVIDIA model slug. |
 | `NEXT_PUBLIC_APP_URL` | `https://ycworthy.intelliforge.tech` | Used for share links + OpenRouter `HTTP-Referer`. |
 
 ### Local Development
 
 ```bash
 cp .env.local.example .env.local
-# Fill in: OPENROUTER_API_KEY, GOOGLE_AI_API_KEY, NEXT_PUBLIC_APP_URL
+# Fill in: GEMINI_API_KEY, GEMINI_MODEL, OPENROUTER_API_KEY, NEXT_PUBLIC_APP_URL
 ```
 
 ### Sync via Vercel CLI
 
 ```bash
 # Add (or update) the keys for production
+vercel env add GEMINI_API_KEY production
+vercel env add GEMINI_MODEL production
 vercel env add OPENROUTER_API_KEY production
-vercel env add GOOGLE_AI_API_KEY production
 # Optional override
 vercel env add OPENROUTER_NVIDIA_MODEL production
 
-# Remove the legacy Anthropic key if it's still configured
+# Remove the legacy keys if they're still configured
 vercel env rm ANTHROPIC_API_KEY production
+vercel env rm GOOGLE_AI_API_KEY production
 ```
 
 ## Vercel Setup
@@ -152,8 +155,10 @@ Requires `output: "standalone"` in `next.config.js`.
 | Issue | Fix |
 |-------|-----|
 | Build fails | Run `npm run build` locally first; check TypeScript errors |
-| NVIDIA timeout on Hobby | Vercel Hobby max is 10s; Nemotron 253B routinely exceeds — upgrade to Pro or rely on Gemini fallback |
-| OpenRouter 401 / 402 | Key invalid or out of credits — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); fallback to Gemini fires automatically |
+| Gemini 503 "high demand" | Transient — automatic fallback to NVIDIA fires; if OpenRouter key is also down the route returns 502 |
+| Gemini 401 / 403 | Rotate at [aistudio.google.com/apikey](https://aistudio.google.com/apikey); fallback to NVIDIA fires automatically |
+| NVIDIA timeout on Hobby | Vercel Hobby max is 10s; Nemotron 253B routinely exceeds — upgrade to Pro (Gemini default avoids this) |
+| OpenRouter 401 / 402 | Key invalid or out of credits — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); Gemini stays as primary |
 | API key errors | Verify env vars in Vercel Dashboard > Settings > Environment Variables |
 | `maxDuration` ignored | Only works on Pro/Enterprise tier |
 | CORS errors | API routes are server-side; ensure client calls `/api/analyze` not AI APIs directly |

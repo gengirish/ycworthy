@@ -7,7 +7,7 @@ description: Provides architecture knowledge for the YCWorthy startup evaluator.
 
 ## Project Context
 
-YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup URL, choose an AI provider (NVIDIA Nemotron or Gemini), and receive a detailed evaluation scored against YC's real funding criteria. Built by IntelliForge AI, crafted by Girish Hiremath.
+YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup URL, choose an AI provider (Gemini by default, NVIDIA Nemotron as fallback), and receive a detailed evaluation scored against YC's real funding criteria. Built by IntelliForge AI, crafted by Girish Hiremath.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup 
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS 3.4 |
 | Animation | Framer Motion 12, CSS keyframes |
-| AI Providers | NVIDIA Nemotron Ultra 253B (via OpenRouter, primary) + Google Gemini 2.5 Flash (automatic fallback) |
+| AI Providers | Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B via OpenRouter (automatic fallback) |
 | Validation | Zod |
 | Class Utils | clsx |
 | Deployment | Vercel |
@@ -45,7 +45,7 @@ ycworthy/
     │           └── route.ts     # POST /api/analyze (Zod validated)
     │
     ├── components/
-    │   ├── ModelToggle.tsx       # NVIDIA / Gemini switcher
+    │   ├── ModelToggle.tsx       # Gemini / NVIDIA switcher
     │   ├── GradeRing.tsx        # Animated grade circle (S/A/B/C/D/F)
     │   ├── CriteriaGrid.tsx     # 6-criteria score cards with animated bars
     │   ├── ResultCard.tsx       # Full results layout (verdict, flags, question)
@@ -94,8 +94,8 @@ ycworthy/
 ```
 User inputs URL + picks provider (page.tsx)
   → useAnalyze hook → POST /api/analyze
-  → Zod validates { url, provider: "nvidia" | "gemini" }
-  → tries NvidiaProvider first (or GeminiProvider if requested)
+  → Zod validates { url, provider: "nvidia" | "gemini" } (default "gemini")
+  → tries GeminiProvider first (or NvidiaProvider if explicitly requested)
   → on failure → automatically falls back to the other provider
   → response carries { data, provider, fallback_used }
   → Shared SYSTEM_PROMPT from prompts.ts
@@ -133,7 +133,8 @@ User inputs URL + picks provider (page.tsx)
 
 | Variable | Scope | Purpose |
 |----------|-------|---------|
-| `OPENROUTER_API_KEY` | Server | NVIDIA Nemotron via OpenRouter (primary). Required. |
+| `GEMINI_API_KEY` | Server | Gemini API key (primary / default). Required. Legacy `GOOGLE_AI_API_KEY` still accepted as fallback. |
+| `GEMINI_MODEL` | Server | _Optional_ override for the Gemini model slug. Defaults to `gemini-2.5-flash`. |
+| `OPENROUTER_API_KEY` | Server | NVIDIA Nemotron via OpenRouter (automatic fallback). Required. |
 | `OPENROUTER_NVIDIA_MODEL` | Server | _Optional_ override for the NVIDIA model slug. |
-| `GOOGLE_AI_API_KEY` | Server | Gemini API key (automatic fallback). Required. |
 | `NEXT_PUBLIC_APP_URL` | Client | App URL for share links + OpenRouter `HTTP-Referer`. |

@@ -1,8 +1,9 @@
 // src/app/api/analyze/route.ts
 //
 // POST /api/analyze
-// Default provider: NVIDIA (Nemotron Ultra 253B via OpenRouter).
-// On NVIDIA failure (or when explicitly requested) we fall back to Gemini.
+// Default provider: Gemini (gemini-2.5-flash).
+// On Gemini failure (or when explicitly requested) we fall back to NVIDIA
+// Nemotron Ultra 253B via OpenRouter.
 // Anthropic / Claude has been fully removed.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,8 +14,16 @@ import { AIProvider, AnalysisProvider, AnalysisResult } from "@/lib/types";
 
 const RequestSchema = z.object({
   url: z.string().url("Invalid URL format"),
-  provider: z.enum(["nvidia", "gemini"]).default("nvidia"),
+  provider: z.enum(["nvidia", "gemini"]).default("gemini"),
 });
+
+function hasGeminiKey(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY);
+}
+
+function hasNvidiaKey(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEY);
+}
 
 interface RunResult {
   data: AnalysisResult;
@@ -53,11 +62,11 @@ export async function POST(req: NextRequest) {
   const { url, provider: requested } = parsed.data;
 
   // Hard guard: if neither provider is configured, fail fast with a clear message.
-  if (!process.env.OPENROUTER_API_KEY && !process.env.GOOGLE_AI_API_KEY) {
+  if (!hasGeminiKey() && !hasNvidiaKey()) {
     return NextResponse.json(
       {
         error:
-          "No AI provider configured. Set OPENROUTER_API_KEY (NVIDIA) and/or GOOGLE_AI_API_KEY (Gemini).",
+          "No AI provider configured. Set GEMINI_API_KEY (primary) and/or OPENROUTER_API_KEY (NVIDIA fallback).",
       },
       { status: 500 }
     );
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   // Build the call order: requested first, the other as fallback.
   const order: AIProvider[] =
-    requested === "gemini" ? ["gemini", "nvidia"] : ["nvidia", "gemini"];
+    requested === "nvidia" ? ["nvidia", "gemini"] : ["gemini", "nvidia"];
 
   let lastError: unknown = null;
   let result: RunResult | null = null;
@@ -74,8 +83,8 @@ export async function POST(req: NextRequest) {
     const provider = order[i];
 
     // Skip providers that aren't configured rather than 500ing.
-    if (provider === "nvidia" && !process.env.OPENROUTER_API_KEY) continue;
-    if (provider === "gemini" && !process.env.GOOGLE_AI_API_KEY) continue;
+    if (provider === "nvidia" && !hasNvidiaKey()) continue;
+    if (provider === "gemini" && !hasGeminiKey()) continue;
 
     try {
       const data = await tryRun(provider, url);

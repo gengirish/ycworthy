@@ -3,7 +3,7 @@
 ## Project Identity
 - App: YCWorthy — AI-powered YC startup evaluator
 - Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui
-- AI: NVIDIA Nemotron (primary, via OpenRouter) + Google Gemini (automatic fallback). Anthropic / Claude has been removed.
+- AI: Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B via OpenRouter (automatic fallback). Anthropic / Claude has been removed.
 - Deploy: Vercel
 
 ## Code Style
@@ -23,12 +23,12 @@
 
 ## AI Provider Rules
 - Both providers implement the same `AnalysisProvider` interface in `src/lib/types.ts`
-- NVIDIA (primary): OpenRouter chat-completions API with `nvidia/llama-3.1-nemotron-ultra-253b-v1` (overridable via `OPENROUTER_NVIDIA_MODEL`). Use native `fetch` — no SDK.
-- Gemini (fallback): `@google/generative-ai` with `gemini-2.5-flash`
-- `/api/analyze` always tries the requested provider first, then automatically falls back to the other if it errors (response includes `fallback_used` and `X-Provider-Fallback` header)
+- Gemini (primary / default): `@google/generative-ai` with `gemini-2.5-flash` (overridable via `GEMINI_MODEL`). Reads `GEMINI_API_KEY` (legacy `GOOGLE_AI_API_KEY` still accepted as fallback).
+- NVIDIA (fallback): OpenRouter chat-completions API with `nvidia/llama-3.1-nemotron-ultra-253b-v1` (overridable via `OPENROUTER_NVIDIA_MODEL`). Use native `fetch` — no SDK.
+- `/api/analyze` defaults `provider` to `"gemini"`. It always tries the requested provider first, then automatically falls back to the other if it errors. Response includes `fallback_used` and `X-Provider-Fallback` header.
 - System prompt lives in `src/lib/prompts.ts` — shared between both providers
 - Always ask for JSON output; strip markdown fences before `JSON.parse()`
-- Max tokens: 2048 for both providers
+- Max tokens: 2048 for NVIDIA, 4096 for Gemini
 - Do NOT add Anthropic / Claude back. The `@anthropic-ai/sdk` dependency has been removed.
 
 ## UI Rules
@@ -45,9 +45,10 @@
 - Add `X-Provider` response header indicating which AI was used
 
 ## Environment Variables
-- `OPENROUTER_API_KEY` — required for NVIDIA Nemotron (primary)
+- `GEMINI_API_KEY` — required for Gemini (primary). Legacy `GOOGLE_AI_API_KEY` still works as a fallback.
+- `GEMINI_MODEL` — optional override for the Gemini model slug (default `gemini-2.5-flash`)
+- `OPENROUTER_API_KEY` — required for NVIDIA Nemotron (automatic fallback)
 - `OPENROUTER_NVIDIA_MODEL` — optional override for the NVIDIA model slug
-- `GOOGLE_AI_API_KEY` — required for Gemini (fallback)
 - Never read env vars in client components — only in API routes and server components
 
 ## Do NOT
