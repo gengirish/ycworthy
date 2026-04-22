@@ -101,7 +101,7 @@ test("should render hero and input", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "YCWorthy" })).toBeVisible();
   await expect(page.getByPlaceholder("startup-url.com")).toBeVisible();
-  await expect(page.getByText("Claude")).toBeVisible();
+  await expect(page.getByText("NVIDIA")).toBeVisible();
   await expect(page.getByText("Gemini")).toBeVisible();
 });
 ```
@@ -135,8 +135,9 @@ test("should show results after analysis", async ({ page }) => {
           green_flags: ["Strong team"],
           yc_interview_question: "What is your unfair advantage?",
         },
-        provider: "claude",
+        provider: "nvidia",
         duration_ms: 5000,
+        fallback_used: false,
       }),
     })
   );
@@ -181,11 +182,11 @@ test("should auto-analyze from URL params", async ({ page }) => {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: mockResult, provider: "claude", duration_ms: 3000 }),
+      body: JSON.stringify({ data: mockResult, provider: "nvidia", duration_ms: 3000, fallback_used: false }),
     })
   );
 
-  await page.goto("/?url=https://example.com&provider=claude");
+  await page.goto("/?url=https://example.com&provider=nvidia");
   await expect(page.getByText("Crawling website")).toBeVisible({ timeout: 5000 });
 });
 ```

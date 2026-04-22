@@ -18,8 +18,8 @@ src/app/api/
 
 ```typescript
 // POST /api/analyze
-// Body: { url: string, provider: "claude" | "gemini" }
-// Response: { data: AnalysisResult, provider: AIProvider, duration_ms: number }
+// Body: { url: string, provider: "nvidia" | "gemini" }   ← provider defaults to "nvidia"
+// Response: { data: AnalysisResult, provider: AIProvider, duration_ms: number, fallback_used: boolean }
 // Error: { error: string }
 // Headers: X-Provider, X-Duration-Ms
 // maxDuration: 60s (Vercel Pro/Enterprise)
@@ -92,7 +92,7 @@ return NextResponse.json({ error: "API key not configured" }, { status: 500 });
 return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
 // Success responses — { data, provider, duration_ms }
-return NextResponse.json({ data: analysisResult, provider: "claude", duration_ms: 12340 });
+return NextResponse.json({ data: analysisResult, provider: "nvidia", duration_ms: 12340, fallback_used: false });
 ```
 
 ## Rate Limiting (In-Memory)

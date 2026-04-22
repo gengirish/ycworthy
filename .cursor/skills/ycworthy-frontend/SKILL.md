@@ -32,7 +32,7 @@ Custom theme in `tailwind.config.ts`:
 
 - **Colors**: `yc-bg`, `yc-surface`, `yc-border`, `yc-accent`, `yc-text`, `yc-muted`
 - **Grade colors**: `grade-s` through `grade-f`
-- **Provider colors**: `provider-claude` (#CC8844), `provider-gemini` (#4A9EFF)
+- **Provider colors**: `provider-nvidia` (#76B900), `provider-gemini` (#4A9EFF)
 - **Animations**: `fade-up`, `pulse`, `bounce`, `score-fill`, `glow-pulse`
 - **Background**: `bg-grid` for subtle grid overlay
 

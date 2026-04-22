@@ -3,7 +3,7 @@
 ## Project Identity
 - App: YCWorthy — AI-powered YC startup evaluator
 - Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui
-- AI: Anthropic Claude + Google Gemini Pro (switchable via toggle)
+- AI: NVIDIA Nemotron (primary, via OpenRouter) + Google Gemini (automatic fallback). Anthropic / Claude has been removed.
 - Deploy: Vercel
 
 ## Code Style
@@ -23,11 +23,13 @@
 
 ## AI Provider Rules
 - Both providers implement the same `AnalysisProvider` interface in `src/lib/types.ts`
-- Claude: use `@anthropic-ai/sdk` with `claude-sonnet-4-20250514`
-- Gemini: use `@google/generative-ai` with `gemini-1.5-pro`
+- NVIDIA (primary): OpenRouter chat-completions API with `nvidia/llama-3.1-nemotron-ultra-253b-v1` (overridable via `OPENROUTER_NVIDIA_MODEL`). Use native `fetch` — no SDK.
+- Gemini (fallback): `@google/generative-ai` with `gemini-2.5-flash`
+- `/api/analyze` always tries the requested provider first, then automatically falls back to the other if it errors (response includes `fallback_used` and `X-Provider-Fallback` header)
 - System prompt lives in `src/lib/prompts.ts` — shared between both providers
 - Always ask for JSON output; strip markdown fences before `JSON.parse()`
 - Max tokens: 2048 for both providers
+- Do NOT add Anthropic / Claude back. The `@anthropic-ai/sdk` dependency has been removed.
 
 ## UI Rules
 - Color palette: dark theme (#080808 bg, #FFE048 accent, grade colors)
@@ -43,8 +45,9 @@
 - Add `X-Provider` response header indicating which AI was used
 
 ## Environment Variables
-- `ANTHROPIC_API_KEY` — Claude API key
-- `GOOGLE_AI_API_KEY` — Gemini API key
+- `OPENROUTER_API_KEY` — required for NVIDIA Nemotron (primary)
+- `OPENROUTER_NVIDIA_MODEL` — optional override for the NVIDIA model slug
+- `GOOGLE_AI_API_KEY` — required for Gemini (fallback)
 - Never read env vars in client components — only in API routes and server components
 
 ## Do NOT

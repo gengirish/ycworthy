@@ -7,7 +7,7 @@ description: Provides architecture knowledge for the YCWorthy startup evaluator.
 
 ## Project Context
 
-YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup URL, choose an AI provider (Claude or Gemini), and receive a detailed evaluation scored against YC's real funding criteria. Built for IntelliForge AI.
+YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup URL, choose an AI provider (NVIDIA Nemotron or Gemini), and receive a detailed evaluation scored against YC's real funding criteria. Built by IntelliForge AI, crafted by Girish Hiremath.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ YCWorthy is an AI-powered Y Combinator startup evaluator. Users paste a startup 
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS 3.4 |
 | Animation | Framer Motion 12, CSS keyframes |
-| AI Providers | Anthropic Claude Sonnet 4, Google Gemini 1.5 Pro |
+| AI Providers | NVIDIA Nemotron Ultra 253B (via OpenRouter, primary) + Google Gemini 2.5 Flash (automatic fallback) |
 | Validation | Zod |
 | Class Utils | clsx |
 | Deployment | Vercel |
@@ -45,7 +45,7 @@ ycworthy/
     │           └── route.ts     # POST /api/analyze (Zod validated)
     │
     ├── components/
-    │   ├── ModelToggle.tsx       # Claude / Gemini switcher
+    │   ├── ModelToggle.tsx       # NVIDIA / Gemini switcher
     │   ├── GradeRing.tsx        # Animated grade circle (S/A/B/C/D/F)
     │   ├── CriteriaGrid.tsx     # 6-criteria score cards with animated bars
     │   ├── ResultCard.tsx       # Full results layout (verdict, flags, question)
@@ -56,9 +56,10 @@ ycworthy/
     │
     └── lib/
         ├── types.ts             # AnalysisResult, Grade, AIProvider, constants
+        ├── criteria.tsx         # CRITERIA_META + Lucide icon components
         ├── prompts.ts           # System prompt shared by both AI providers
-        ├── claude.ts            # ClaudeProvider (Sonnet 4 + web_search tool)
-        ├── gemini.ts            # GeminiProvider (1.5 Pro + JSON mode)
+        ├── nvidia.ts            # NvidiaProvider (OpenRouter → Nemotron Ultra 253B)
+        ├── gemini.ts            # GeminiProvider (gemini-2.5-flash, JSON mode)
         └── history.ts           # localStorage history utilities
 ```
 
@@ -93,8 +94,10 @@ ycworthy/
 ```
 User inputs URL + picks provider (page.tsx)
   → useAnalyze hook → POST /api/analyze
-  → Zod validates { url, provider }
-  → ClaudeProvider or GeminiProvider.analyze(url)
+  → Zod validates { url, provider: "nvidia" | "gemini" }
+  → tries NvidiaProvider first (or GeminiProvider if requested)
+  → on failure → automatically falls back to the other provider
+  → response carries { data, provider, fallback_used }
   → Shared SYSTEM_PROMPT from prompts.ts
   → JSON response parsed → AnalysisResult type
   → ResultCard renders grades, criteria, flags
@@ -107,7 +110,7 @@ User inputs URL + picks provider (page.tsx)
 |----------|-------|---------|
 | Components | PascalCase | `GradeRing.tsx`, `ResultCard.tsx` |
 | Hooks | camelCase with `use` | `useAnalyze.ts` |
-| Lib files | camelCase | `claude.ts`, `history.ts` |
+| Lib files | camelCase | `nvidia.ts`, `history.ts` |
 | Types | PascalCase | `AnalysisResult`, `AIProvider` |
 | Constants | UPPER_SNAKE_CASE | `GRADE_COLOR`, `CRITERIA_META` |
 | API routes | kebab-case dirs | `api/analyze/route.ts` |
@@ -130,6 +133,7 @@ User inputs URL + picks provider (page.tsx)
 
 | Variable | Scope | Purpose |
 |----------|-------|---------|
-| `ANTHROPIC_API_KEY` | Server | Claude API key |
-| `GOOGLE_AI_API_KEY` | Server | Gemini API key |
-| `NEXT_PUBLIC_APP_URL` | Client | App URL for share links |
+| `OPENROUTER_API_KEY` | Server | NVIDIA Nemotron via OpenRouter (primary). Required. |
+| `OPENROUTER_NVIDIA_MODEL` | Server | _Optional_ override for the NVIDIA model slug. |
+| `GOOGLE_AI_API_KEY` | Server | Gemini API key (automatic fallback). Required. |
+| `NEXT_PUBLIC_APP_URL` | Client | App URL for share links + OpenRouter `HTTP-Referer`. |

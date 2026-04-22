@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     "YC",
     "startup evaluator",
     "AI startup analysis",
-    "Claude",
+    "NVIDIA Nemotron",
     "Gemini",
     "founder-market fit",
     "IntelliForge AI",

@@ -66,7 +66,13 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
         <div className="mt-5 pt-4 border-t border-[#1a1a1a] flex gap-5 flex-wrap">
           {[
             { label: "Overall Score", val: `${result.overall_score}/100` },
-            { label: "Provider", val: provider === "claude" ? "Claude Sonnet" : "Gemini 1.5 Pro" },
+            {
+              label: "Provider",
+              val:
+                provider === "gemini"
+                  ? "Gemini 2.5 Flash"
+                  : "NVIDIA Nemotron Ultra 253B",
+            },
             { label: "Analysis Time", val: durationMs ? `${(durationMs / 1000).toFixed(1)}s` : "—" },
           ].map((m) => (
             <div key={m.label}>

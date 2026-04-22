@@ -26,7 +26,7 @@ const config: Config = {
           f: "#FF3860",
         },
         provider: {
-          claude: "#CC8844",
+          nvidia: "#76B900",
           gemini: "#4A9EFF",
         },
       },

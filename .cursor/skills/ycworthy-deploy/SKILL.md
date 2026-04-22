@@ -8,15 +8,17 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 ## Architecture
 
 ```
-┌──────────────────┐    API routes     ┌────────────────┐
-│  Vercel (Next.js) │ ───────────────► │  Anthropic API  │
-│  Frontend + API   │                  │  (Claude)       │
-└──────────────────┘                  └────────────────┘
-         │                              ┌────────────────┐
-         └─────────────────────────────►│  Google AI API  │
-                                       │  (Gemini)       │
-                                       └────────────────┘
+┌──────────────────┐    API route       ┌────────────────────────┐
+│  Vercel (Next.js) │ ──── primary ───► │  OpenRouter (NVIDIA     │
+│  Frontend + API   │                   │  Nemotron Ultra 253B)   │
+└──────────────────┘                   └────────────────────────┘
+         │                              ┌────────────────────────┐
+         └────── fallback ─────────────►│  Google AI (Gemini      │
+                                       │  2.5 Flash)             │
+                                       └────────────────────────┘
 ```
+
+> Anthropic / Claude was removed in favour of NVIDIA Nemotron via OpenRouter. Do not add `ANTHROPIC_API_KEY` back.
 
 ## Environment Variables
 
@@ -24,15 +26,29 @@ description: Deploy YCWorthy to Vercel with environment variables, CI/CD, custom
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `ANTHROPIC_API_KEY` | `sk-ant-...` | Claude API — requires paid tier for web_search |
-| `GOOGLE_AI_API_KEY` | `AIza...` | Gemini API |
-| `NEXT_PUBLIC_APP_URL` | `https://your-domain.com` | Used for share links |
+| `OPENROUTER_API_KEY` | `sk-or-v1-...` | **Required.** NVIDIA Nemotron via OpenRouter (primary). |
+| `OPENROUTER_NVIDIA_MODEL` | `nvidia/llama-3.1-nemotron-ultra-253b-v1` | _Optional._ Override model slug. |
+| `GOOGLE_AI_API_KEY` | `AIza...` | **Required.** Gemini 2.5 Flash (automatic fallback). |
+| `NEXT_PUBLIC_APP_URL` | `https://ycworthy.intelliforge.tech` | Used for share links + OpenRouter `HTTP-Referer`. |
 
 ### Local Development
 
 ```bash
 cp .env.local.example .env.local
-# Fill in: ANTHROPIC_API_KEY, GOOGLE_AI_API_KEY, NEXT_PUBLIC_APP_URL
+# Fill in: OPENROUTER_API_KEY, GOOGLE_AI_API_KEY, NEXT_PUBLIC_APP_URL
+```
+
+### Sync via Vercel CLI
+
+```bash
+# Add (or update) the keys for production
+vercel env add OPENROUTER_API_KEY production
+vercel env add GOOGLE_AI_API_KEY production
+# Optional override
+vercel env add OPENROUTER_NVIDIA_MODEL production
+
+# Remove the legacy Anthropic key if it's still configured
+vercel env rm ANTHROPIC_API_KEY production
 ```
 
 ## Vercel Setup
@@ -53,14 +69,14 @@ Or connect GitHub repo for auto-deploys on push to `main`.
 - **Framework**: Next.js (auto-detected)
 - **Node.js**: 20.x
 - **Function Region**: `sin1` (Singapore) or `bom1` (Mumbai) for India latency
-- **Max Duration**: 60s (requires Pro/Enterprise for Claude with web search)
+- **Max Duration**: 60s (requires Pro/Enterprise — NVIDIA Nemotron 253B inference can take 8–18s)
 
 ### next.config.js
 
 ```javascript
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ["@anthropic-ai/sdk", "@google/generative-ai"],
+    serverComponentsExternalPackages: ["@google/generative-ai"],
   },
 };
 ```
@@ -136,10 +152,12 @@ Requires `output: "standalone"` in `next.config.js`.
 | Issue | Fix |
 |-------|-----|
 | Build fails | Run `npm run build` locally first; check TypeScript errors |
-| Claude timeout on Hobby | Vercel Hobby max is 10s; use Gemini or upgrade to Pro |
+| NVIDIA timeout on Hobby | Vercel Hobby max is 10s; Nemotron 253B routinely exceeds — upgrade to Pro or rely on Gemini fallback |
+| OpenRouter 401 / 402 | Key invalid or out of credits — rotate at [openrouter.ai/keys](https://openrouter.ai/keys); fallback to Gemini fires automatically |
 | API key errors | Verify env vars in Vercel Dashboard > Settings > Environment Variables |
 | `maxDuration` ignored | Only works on Pro/Enterprise tier |
 | CORS errors | API routes are server-side; ensure client calls `/api/analyze` not AI APIs directly |
+| Stale `ANTHROPIC_API_KEY` in Vercel | Remove with `vercel env rm ANTHROPIC_API_KEY production` — Anthropic was retired |
 
 ## Key Rules
 

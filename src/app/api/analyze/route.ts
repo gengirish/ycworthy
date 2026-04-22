@@ -1,19 +1,40 @@
 // src/app/api/analyze/route.ts
+//
+// POST /api/analyze
+// Default provider: NVIDIA (Nemotron Ultra 253B via OpenRouter).
+// On NVIDIA failure (or when explicitly requested) we fall back to Gemini.
+// Anthropic / Claude has been fully removed.
+
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { ClaudeProvider } from "@/lib/claude";
+import { NvidiaProvider } from "@/lib/nvidia";
 import { GeminiProvider } from "@/lib/gemini";
-import { AIProvider } from "@/lib/types";
+import { AIProvider, AnalysisProvider, AnalysisResult } from "@/lib/types";
 
 const RequestSchema = z.object({
   url: z.string().url("Invalid URL format"),
-  provider: z.enum(["claude", "gemini"]).default("claude"),
+  provider: z.enum(["nvidia", "gemini"]).default("nvidia"),
 });
+
+interface RunResult {
+  data: AnalysisResult;
+  provider: AIProvider;
+  fallback_used: boolean;
+  primary_error?: string;
+}
+
+async function tryRun(
+  provider: AIProvider,
+  url: string
+): Promise<AnalysisResult> {
+  const analyzer: AnalysisProvider =
+    provider === "gemini" ? new GeminiProvider() : new NvidiaProvider();
+  return analyzer.analyze(url);
+}
 
 export async function POST(req: NextRequest) {
   const start = Date.now();
 
-  // Parse & validate body
   let body: unknown;
   try {
     body = await req.json();
@@ -29,46 +50,78 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { url, provider } = parsed.data;
+  const { url, provider: requested } = parsed.data;
 
-  // Guard: check env vars
-  if (provider === "claude" && !process.env.ANTHROPIC_API_KEY) {
+  // Hard guard: if neither provider is configured, fail fast with a clear message.
+  if (!process.env.OPENROUTER_API_KEY && !process.env.GOOGLE_AI_API_KEY) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured" },
-      { status: 500 }
-    );
-  }
-  if (provider === "gemini" && !process.env.GOOGLE_AI_API_KEY) {
-    return NextResponse.json(
-      { error: "GOOGLE_AI_API_KEY is not configured" },
-      { status: 500 }
-    );
-  }
-
-  try {
-    const analyzer =
-      provider === "claude" ? new ClaudeProvider() : new GeminiProvider();
-
-    const data = await analyzer.analyze(url);
-    const duration_ms = Date.now() - start;
-
-    return NextResponse.json(
-      { data, provider, duration_ms },
       {
-        status: 200,
-        headers: {
-          "X-Provider": provider,
-          "X-Duration-Ms": String(duration_ms),
-        },
-      }
+        error:
+          "No AI provider configured. Set OPENROUTER_API_KEY (NVIDIA) and/or GOOGLE_AI_API_KEY (Gemini).",
+      },
+      { status: 500 }
     );
-  } catch (err: unknown) {
-    console.error(`[analyze] ${provider} error:`, err);
-    const message =
-      err instanceof Error ? err.message : "Analysis failed unexpectedly";
-    return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  // Build the call order: requested first, the other as fallback.
+  const order: AIProvider[] =
+    requested === "gemini" ? ["gemini", "nvidia"] : ["nvidia", "gemini"];
+
+  let lastError: unknown = null;
+  let result: RunResult | null = null;
+
+  for (let i = 0; i < order.length; i++) {
+    const provider = order[i];
+
+    // Skip providers that aren't configured rather than 500ing.
+    if (provider === "nvidia" && !process.env.OPENROUTER_API_KEY) continue;
+    if (provider === "gemini" && !process.env.GOOGLE_AI_API_KEY) continue;
+
+    try {
+      const data = await tryRun(provider, url);
+      result = {
+        data,
+        provider,
+        fallback_used: i > 0,
+        primary_error:
+          i > 0 && lastError instanceof Error ? lastError.message : undefined,
+      };
+      break;
+    } catch (err) {
+      lastError = err;
+      console.error(`[analyze] ${provider} failed:`, err);
+      // Continue to next provider in the order.
+    }
+  }
+
+  if (!result) {
+    const message =
+      lastError instanceof Error
+        ? lastError.message
+        : "All AI providers failed.";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  const duration_ms = Date.now() - start;
+
+  return NextResponse.json(
+    {
+      data: result.data,
+      provider: result.provider,
+      duration_ms,
+      fallback_used: result.fallback_used,
+      ...(result.primary_error ? { primary_error: result.primary_error } : {}),
+    },
+    {
+      status: 200,
+      headers: {
+        "X-Provider": result.provider,
+        "X-Provider-Fallback": result.fallback_used ? "true" : "false",
+        "X-Duration-Ms": String(duration_ms),
+      },
+    }
+  );
 }
 
-// Disable body size limit for large pages (Vercel default is 4.5MB)
-export const maxDuration = 60; // seconds — Vercel Pro/Enterprise
+// Vercel Pro: allow up to 60s for slow LLM responses.
+export const maxDuration = 60;

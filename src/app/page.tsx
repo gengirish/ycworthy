@@ -31,7 +31,7 @@ function HomeContent() {
   const router = useRouter();
 
   const [url, setUrl] = useState("");
-  const [provider, setProvider] = useState<AIProvider>("claude");
+  const [provider, setProvider] = useState<AIProvider>("nvidia");
   const [stepIndex, setStepIndex] = useState(0);
   const [historyKey, setHistoryKey] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -82,10 +82,12 @@ function HomeContent() {
     if (paramUrl) {
       autoTriggered.current = true;
       setUrl(paramUrl);
-      if (paramProvider === "claude" || paramProvider === "gemini") {
-        setProvider(paramProvider);
-      }
-      setTimeout(() => handleAnalyze(paramUrl, paramProvider ?? "claude"), 100);
+      // Backward-compat: legacy share links may still carry provider=claude.
+      // Treat anything that isn't "gemini" as "nvidia" (the new default).
+      const normalized: AIProvider =
+        paramProvider === "gemini" ? "gemini" : "nvidia";
+      setProvider(normalized);
+      setTimeout(() => handleAnalyze(paramUrl, normalized), 100);
     }
   }, [searchParams, handleAnalyze]);
 

@@ -2,7 +2,7 @@
 
 > Drop any startup URL. Get a brutal, honest AI evaluation against Y Combinator's real funding criteria.
 >
-> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Claude Sonnet 4 · Gemini 1.5 Pro · Vercel
+> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · NVIDIA Nemotron Ultra 253B (via OpenRouter) · Gemini 2.5 Flash (fallback) · Vercel
 
 ---
 
@@ -41,8 +41,9 @@ Fill in your API keys in `.env.local`:
 
 | Variable | Where to get it |
 |----------|----------------|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-| `GOOGLE_AI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — used for NVIDIA Nemotron (primary) |
+| `OPENROUTER_NVIDIA_MODEL` | _(optional)_ override the NVIDIA model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
+| `GOOGLE_AI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — used for Gemini (fallback) |
 
 ### 3. Run dev server
 
@@ -59,14 +60,18 @@ Open [http://localhost:3000](http://localhost:3000)
 ```
 User inputs URL + picks provider
         ↓
-/api/analyze (Next.js API Route)
+/api/analyze (Next.js API Route, Zod-validated)
         ↓
-ClaudeProvider  ──OR──  GeminiProvider
-(web_search tool)       (JSON mode)
+NvidiaProvider (OpenRouter → Nemotron Ultra 253B)   ← primary
+        │
+        │  on failure (timeout, 5xx, parse error…)
+        ↓
+GeminiProvider (gemini-2.5-flash, JSON mode)        ← automatic fallback
         ↓
 Shared JSON schema via prompts.ts
         ↓
-AnalysisResult type → ResultCard UI
+AnalysisResult → ResultCard UI
+                (response also carries `fallback_used` + `X-Provider-Fallback` header)
 ```
 
 ---
@@ -92,34 +97,34 @@ ycworthy/
     │           └── route.ts    ← POST /api/analyze (Zod validated)
     │
     ├── components/
-    │   ├── ModelToggle.tsx      ← Claude / Gemini switcher
-    │   ├── GradeRing.tsx       ← Animated grade circle (S/A/B/C/D/F)
-    │   ├── CriteriaGrid.tsx    ← 6-criteria score cards with bars
-    │   ├── ResultCard.tsx      ← Full results layout
-    │   └── HistoryStrip.tsx    ← Recent analyses from localStorage
+    │   ├── ModelToggle.tsx      ← NVIDIA / Gemini switcher
+    │   ├── GradeRing.tsx        ← Animated grade circle (S/A/B/C/D/F)
+    │   ├── CriteriaGrid.tsx     ← 6-criteria score cards with bars
+    │   ├── ResultCard.tsx       ← Full results layout
+    │   └── HistoryStrip.tsx     ← Recent analyses from localStorage
     │
     ├── hooks/
-    │   └── useAnalyze.ts       ← Fetch logic + loading/error state
+    │   └── useAnalyze.ts        ← Fetch logic + loading/error state
     │
     └── lib/
-        ├── types.ts            ← Shared TypeScript types + constants
-        ├── prompts.ts          ← System prompt (shared by both providers)
-        ├── claude.ts           ← ClaudeProvider (Sonnet 4 + web_search)
-        ├── gemini.ts           ← GeminiProvider (1.5 Pro + JSON mode)
-        └── history.ts          ← localStorage history utilities
+        ├── types.ts             ← Shared TypeScript types + constants
+        ├── prompts.ts           ← System prompt (shared by both providers)
+        ├── nvidia.ts            ← NvidiaProvider (OpenRouter → Nemotron Ultra 253B)
+        ├── gemini.ts            ← GeminiProvider (gemini-2.5-flash, JSON mode)
+        └── history.ts           ← localStorage history utilities
 ```
 
 ---
 
 ## Features
 
-- **Dual AI providers** — Toggle between Claude (with web search) and Gemini (faster, JSON mode)
+- **NVIDIA-first, Gemini fallback** — Always tries NVIDIA Nemotron Ultra 253B first; if it errors, automatically retries on Gemini 2.5 Flash. Surfaces `fallback_used` in the response.
 - **6 YC criteria** — Problem, Market, Solution, Traction, Founder-Market Fit, Timing
 - **Animated grade rings** — Color-coded S through F grades with glow effects
 - **Score bars** — Animated progress bars for each criterion
 - **Recent analyses** — Last 8 analyses stored in localStorage
 - **Share links** — Copy a permalink to share any analysis result
-- **Auto-analyze from URL** — `/?url=example.com&provider=claude` triggers analysis on load
+- **Auto-analyze from URL** — `/?url=example.com&provider=nvidia` triggers analysis on load
 - **Dark theme** — #080808 background with #FFE048 accent
 - **Mobile-responsive** — Works on 375px+ screens
 
@@ -127,13 +132,14 @@ ycworthy/
 
 ## AI Provider Comparison
 
-| Feature | Claude Sonnet 4 | Gemini 1.5 Pro |
-|---------|-----------------|----------------|
-| Web search | Native tool | Knowledge only |
-| JSON mode | Parse from text | `responseMimeType` |
-| Speed | ~12–20s (with search) | ~4–8s |
-| Quality | Higher (live data) | Good (training data) |
-| Cost | ~$0.003/analysis | ~$0.001/analysis |
+| Feature | NVIDIA Nemotron Ultra 253B (via OpenRouter) | Gemini 2.5 Flash |
+|---------|---------------------------------------------|------------------|
+| Role | Primary | Automatic fallback |
+| Reasoning | Top-tier 253B reasoning model | Fast, cost-efficient |
+| JSON mode | `response_format: json_object` | `responseMimeType: application/json` |
+| Speed | ~8–18s | ~3–6s |
+| API surface | OpenAI-compatible (native `fetch`) | `@google/generative-ai` SDK |
+| Override | `OPENROUTER_NVIDIA_MODEL` env var | _(none)_ |
 
 ---
 
@@ -146,8 +152,9 @@ vercel
 ```
 
 Add environment variables in Vercel Dashboard → Settings → Environment Variables:
-- `ANTHROPIC_API_KEY`
-- `GOOGLE_AI_API_KEY`
+- `OPENROUTER_API_KEY` _(required — NVIDIA primary)_
+- `GOOGLE_AI_API_KEY` _(required — Gemini fallback)_
+- `OPENROUTER_NVIDIA_MODEL` _(optional override)_
 
 Then redeploy:
 
@@ -166,8 +173,8 @@ vercel --prod
 
 - **Next.js 14** App Router, TypeScript strict
 - **Tailwind CSS** — Dark theme with custom YC palette
-- **Anthropic SDK** — Claude Sonnet 4 with `web_search` tool
-- **Google Generative AI** — Gemini 1.5 Pro with JSON mode
+- **OpenRouter (native `fetch`)** — NVIDIA Nemotron Ultra 253B as the primary reasoning model
+- **Google Generative AI** — Gemini 2.5 Flash with JSON mode (automatic fallback)
 - **Zod** — API request validation
 - **Framer Motion** — Animation library
 - **clsx** — Conditional class names

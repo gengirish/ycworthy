@@ -2,7 +2,7 @@
 
 export type Grade = "S" | "A" | "B" | "C" | "D" | "F";
 export type YCLikelihood = "Unlikely" | "Possible" | "Probable" | "Strong";
-export type AIProvider = "claude" | "gemini";
+export type AIProvider = "nvidia" | "gemini";
 
 export interface CriterionResult {
   grade: Grade;

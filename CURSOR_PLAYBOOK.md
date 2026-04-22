@@ -85,20 +85,22 @@ npm run dev
 
 ## Phase 2 — API Keys
 
-### Anthropic (Claude)
-1. Go to https://console.anthropic.com/settings/keys
-2. Create a new API key
-3. Paste into `.env.local` as `ANTHROPIC_API_KEY=sk-ant-...`
+> Anthropic / Claude has been removed from this project. Do not add `ANTHROPIC_API_KEY` back.
 
-> ⚠️ Web search tool (`web_search_20250305`) requires the Claude API — not available on free tier.
-> Make sure your key has access to `claude-sonnet-4-20250514`.
+### OpenRouter (NVIDIA Nemotron — primary)
+1. Go to https://openrouter.ai/keys
+2. Create a new API key (`sk-or-v1-...`)
+3. Paste into `.env.local` as `OPENROUTER_API_KEY=sk-or-v1-...`
 
-### Google AI Studio (Gemini)
+> Default model: `nvidia/llama-3.1-nemotron-ultra-253b-v1` (NVIDIA's largest reasoning model).
+> Override with `OPENROUTER_NVIDIA_MODEL=...` if you want a smaller / cheaper Nemotron variant.
+
+### Google AI Studio (Gemini — automatic fallback)
 1. Go to https://aistudio.google.com/apikey
 2. Create a new API key
 3. Paste into `.env.local` as `GOOGLE_AI_API_KEY=AIza...`
 
-> Gemini 1.5 Pro with `responseMimeType: "application/json"` gives reliable structured output.
+> Gemini 2.5 Flash with `responseMimeType: "application/json"` gives reliable structured output and kicks in automatically if NVIDIA fails.
 
 ---
 
@@ -116,8 +118,9 @@ vercel
 
 # 4. Add env vars in Vercel dashboard
 #    → Settings → Environment Variables
-#    ANTHROPIC_API_KEY   = sk-ant-...
-#    GOOGLE_AI_API_KEY   = AIza...
+#    OPENROUTER_API_KEY        = sk-or-v1-...   (required, NVIDIA primary)
+#    GOOGLE_AI_API_KEY         = AIza...        (required, Gemini fallback)
+#    OPENROUTER_NVIDIA_MODEL   = nvidia/llama-3.1-nemotron-ultra-253b-v1   (optional override)
 
 # 5. Redeploy to apply env vars
 vercel --prod
