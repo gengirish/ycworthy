@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   const order: AIProvider[] =
     requested === "nvidia" ? ["nvidia", "gemini"] : ["gemini", "nvidia"];
 
-  let lastError: unknown = null;
+  const errors: Partial<Record<AIProvider, string>> = {};
   let result: RunResult | null = null;
 
   for (let i = 0; i < order.length; i++) {
@@ -92,23 +92,32 @@ export async function POST(req: NextRequest) {
         data,
         provider,
         fallback_used: i > 0,
-        primary_error:
-          i > 0 && lastError instanceof Error ? lastError.message : undefined,
+        primary_error: errors[order[0]],
       };
       break;
     } catch (err) {
-      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      errors[provider] = msg;
       console.error(`[analyze] ${provider} failed:`, err);
       // Continue to next provider in the order.
     }
   }
 
   if (!result) {
-    const message =
-      lastError instanceof Error
-        ? lastError.message
-        : "All AI providers failed.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    // Surface every provider error so debugging isn't blind.
+    const detail = Object.entries(errors)
+      .map(([p, m]) => `${p}: ${m}`)
+      .join(" | ");
+    return NextResponse.json(
+      {
+        error:
+          detail.length > 0
+            ? `All AI providers failed. ${detail}`
+            : "All AI providers failed.",
+        provider_errors: errors,
+      },
+      { status: 502 }
+    );
   }
 
   const duration_ms = Date.now() - start;
