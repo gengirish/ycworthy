@@ -35,7 +35,18 @@ interface ChatMessage {
 
 interface ChatChoice {
   index: number;
-  message: { role: string; content: string };
+  message: {
+    role: string;
+    /** Standard OpenAI-shaped content field. */
+    content: string | null;
+    /**
+     * NIM-specific: reasoning models (e.g. Nemotron Ultra 253B) put their
+     * actual response here when JSON-mode is on, leaving `content` null.
+     * OpenRouter coalesces this into `content` automatically, but NIM does
+     * not — so we have to read it ourselves.
+     */
+    reasoning_content?: string | null;
+  };
   finish_reason: string;
 }
 
@@ -127,7 +138,12 @@ export class NvidiaProvider implements AnalysisProvider {
       throw new Error(`${this.label} error: ${json.error.message}`);
     }
 
-    const content = json.choices?.[0]?.message?.content;
+    const choice = json.choices?.[0];
+    // Reasoning models on NIM (Nemotron Ultra 253B in particular) emit their
+    // structured output into `reasoning_content` and leave `content` null
+    // when `response_format: json_object` is set. Accept either.
+    const content =
+      choice?.message?.content ?? choice?.message?.reasoning_content ?? null;
     if (!content) {
       throw new Error(`${this.label} returned no content`);
     }
