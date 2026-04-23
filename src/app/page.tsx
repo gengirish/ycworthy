@@ -16,6 +16,7 @@ import { useAnalyze } from "@/hooks/useAnalyze";
 import { ModelToggle } from "@/components/ModelToggle";
 import { ResultCard } from "@/components/ResultCard";
 import { HistoryStrip } from "@/components/HistoryStrip";
+import { PlatformSurfaces } from "@/components/PlatformSurfaces";
 
 const LOADING_STEPS = [
   "Crawling website...",
@@ -112,7 +113,7 @@ function HomeContent() {
   };
 
   return (
-    <main className="min-h-screen bg-yc-bg text-yc-text font-sans relative">
+    <main id="top" className="min-h-screen bg-yc-bg text-yc-text font-sans relative">
       {/* Editorial paper-warm grid */}
       <div
         className="fixed inset-0 pointer-events-none bg-grid bg-[size:80px_80px] z-0"
@@ -194,6 +195,11 @@ function HomeContent() {
             />
           </section>
         )}
+
+        {/* Built for humans, agents & pipelines — surfaces the REST/MCP/CLI
+            entry points alongside the consumer UI. Hidden once a result is
+            on screen so it never competes with the verdict. */}
+        {!result && !loading && <PlatformSurfaces />}
 
         {/* Loading */}
         {loading && (
