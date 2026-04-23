@@ -1,20 +1,38 @@
 // src/app/api/analyze/route.ts
 //
-// POST /api/analyze
-// Default provider: Gemini (gemini-2.5-flash).
-// On Gemini failure (or when explicitly requested) we fall back to NVIDIA
-// Nemotron Ultra 253B via OpenRouter.
-// Anthropic / Claude has been fully removed.
+// Public API surface for analyzing a startup URL.
+//
+//   GET    /api/analyze?url=...&provider=gemini   ← simple curl/MCP/browser
+//   POST   /api/analyze   { url, provider? }      ← classic JSON body
+//   OPTIONS                                       ← CORS preflight
+//
+// Default provider: Gemini (gemini-2.5-flash). On Gemini failure we fall back
+// automatically to NVIDIA Nemotron Ultra 253B (NIM preferred, OpenRouter
+// fallback transport). Anthropic / Claude has been fully removed.
+//
+// Every response carries a `meta` envelope: { api_version, request_id,
+// timestamp, duration_ms }. Headers also expose `X-Request-Id`, `X-Provider`,
+// `X-Provider-Fallback`, `X-Duration-Ms`, `X-Api-Version` so non-JSON
+// consumers (CI, shell scripts) can read the same info.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { NvidiaProvider, hasAnyNvidiaKey } from "@/lib/nvidia";
 import { GeminiProvider } from "@/lib/gemini";
 import { AIProvider, AnalysisProvider, AnalysisResult } from "@/lib/types";
+import {
+  buildMeta,
+  errorResponse,
+  jsonResponse,
+  newRequestId,
+  preflight,
+} from "@/lib/http";
+
+const ProviderSchema = z.enum(["nvidia", "gemini"]).default("gemini");
 
 const RequestSchema = z.object({
   url: z.string().url("Invalid URL format"),
-  provider: z.enum(["nvidia", "gemini"]).default("gemini"),
+  provider: ProviderSchema,
 });
 
 function hasGeminiKey(): boolean {
@@ -42,34 +60,32 @@ async function tryRun(
   return analyzer.analyze(url);
 }
 
-export async function POST(req: NextRequest) {
-  const start = Date.now();
+interface AnalyzeInput {
+  url: string;
+  provider: AIProvider;
+}
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+/**
+ * Core analyze pipeline. Shared between GET and POST.
+ * Returns a fully-formed NextResponse so callers don't repeat envelope wiring.
+ */
+async function runAnalyze(
+  input: AnalyzeInput,
+  requestId: string,
+  startMs: number
+) {
+  const { url, provider: requested } = input;
 
-  const parsed = RequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.errors[0].message },
-      { status: 422 }
-    );
-  }
-
-  const { url, provider: requested } = parsed.data;
-
-  // Hard guard: if neither provider is configured, fail fast with a clear message.
+  // Hard guard: no provider configured at all.
   if (!hasGeminiKey() && !hasNvidiaKey()) {
-    return NextResponse.json(
+    return errorResponse(
+      "No AI provider configured. Set GEMINI_API_KEY (primary) and/or NVIDIA_NIM_API_KEY (preferred) or OPENROUTER_API_KEY (NVIDIA fallback transports).",
       {
-        error:
-          "No AI provider configured. Set GEMINI_API_KEY (primary) and/or NVIDIA_NIM_API_KEY (preferred) or OPENROUTER_API_KEY (NVIDIA fallback transports).",
-      },
-      { status: 500 }
+        status: 500,
+        code: "no_provider_configured",
+        meta: buildMeta(requestId, startMs),
+        headers: { "X-Request-Id": requestId },
+      }
     );
   }
 
@@ -82,8 +98,6 @@ export async function POST(req: NextRequest) {
 
   for (let i = 0; i < order.length; i++) {
     const provider = order[i];
-
-    // Skip providers that aren't configured rather than 500ing.
     if (provider === "nvidia" && !hasNvidiaKey()) continue;
     if (provider === "gemini" && !hasGeminiKey()) continue;
 
@@ -99,47 +113,121 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors[provider] = msg;
-      console.error(`[analyze] ${provider} failed:`, err);
-      // Continue to next provider in the order.
+      console.error(`[analyze] ${provider} failed (req=${requestId}):`, err);
     }
   }
 
   if (!result) {
-    // Surface every provider error so debugging isn't blind.
     const detail = Object.entries(errors)
       .map(([p, m]) => `${p}: ${m}`)
       .join(" | ");
-    return NextResponse.json(
+    return errorResponse(
+      detail.length > 0
+        ? `All AI providers failed. ${detail}`
+        : "All AI providers failed.",
       {
-        error:
-          detail.length > 0
-            ? `All AI providers failed. ${detail}`
-            : "All AI providers failed.",
-        provider_errors: errors,
-      },
-      { status: 502 }
+        status: 502,
+        code: "all_providers_failed",
+        meta: buildMeta(requestId, startMs),
+        extra: { provider_errors: errors },
+        headers: { "X-Request-Id": requestId },
+      }
     );
   }
 
-  const duration_ms = Date.now() - start;
+  const meta = buildMeta(requestId, startMs);
 
-  return NextResponse.json(
+  return jsonResponse(
     {
       data: result.data,
       provider: result.provider,
-      duration_ms,
+      // Backwards-compatible top-level duration alongside meta.duration_ms.
+      duration_ms: meta.duration_ms,
       fallback_used: result.fallback_used,
+      requested_provider: requested,
       ...(result.primary_error ? { primary_error: result.primary_error } : {}),
     },
     {
-      status: 200,
+      meta,
       headers: {
         "X-Provider": result.provider,
         "X-Provider-Fallback": result.fallback_used ? "true" : "false",
-        "X-Duration-Ms": String(duration_ms),
+        "X-Duration-Ms": String(meta.duration_ms),
+        "X-Request-Id": requestId,
+        "Cache-Control": "no-store",
       },
     }
   );
+}
+
+// ── Handlers ────────────────────────────────────────────────────────────────
+
+export async function OPTIONS() {
+  return preflight();
+}
+
+export async function POST(req: NextRequest) {
+  const start = Date.now();
+  const requestId = req.headers.get("x-request-id") ?? newRequestId();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return errorResponse("Invalid JSON body", {
+      status: 400,
+      code: "invalid_json",
+      meta: buildMeta(requestId, start),
+      headers: { "X-Request-Id": requestId },
+    });
+  }
+
+  const parsed = RequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return errorResponse(parsed.error.errors[0].message, {
+      status: 422,
+      code: "validation_failed",
+      meta: buildMeta(requestId, start),
+      extra: { issues: parsed.error.issues },
+      headers: { "X-Request-Id": requestId },
+    });
+  }
+
+  return runAnalyze(parsed.data, requestId, start);
+}
+
+export async function GET(req: NextRequest) {
+  const start = Date.now();
+  const requestId = req.headers.get("x-request-id") ?? newRequestId();
+
+  const { searchParams } = new URL(req.url);
+  const rawUrl = searchParams.get("url");
+  const rawProvider = searchParams.get("provider") ?? undefined;
+
+  if (!rawUrl) {
+    return errorResponse(
+      "Missing required query param: url. Try /api/analyze?url=https://example.com",
+      {
+        status: 422,
+        code: "missing_url",
+        meta: buildMeta(requestId, start),
+        headers: { "X-Request-Id": requestId },
+      }
+    );
+  }
+
+  const parsed = RequestSchema.safeParse({ url: rawUrl, provider: rawProvider });
+  if (!parsed.success) {
+    return errorResponse(parsed.error.errors[0].message, {
+      status: 422,
+      code: "validation_failed",
+      meta: buildMeta(requestId, start),
+      extra: { issues: parsed.error.issues },
+      headers: { "X-Request-Id": requestId },
+    });
+  }
+
+  return runAnalyze(parsed.data, requestId, start);
 }
 
 // Vercel Pro: allow up to 60s for slow LLM responses.

@@ -3,7 +3,8 @@
 ## Project Identity
 - App: YCWorthy — AI-powered YC startup evaluator
 - Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui
-- AI: Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B via OpenRouter (automatic fallback). Anthropic / Claude has been removed.
+- AI: Google Gemini 2.5 Flash (primary / default) + NVIDIA Nemotron Ultra 253B via NIM (preferred) or OpenRouter (fallback transport). Anthropic / Claude has been removed.
+- Surfaces: Web UI · Public REST API (`/api/analyze`, `/api/health`, `/api/openapi.json`) · MCP server (`scripts/mcp-server.mjs`) · CLI (`scripts/cli.mjs`)
 - Deploy: Vercel
 
 ## Code Style
@@ -20,32 +21,42 @@
 - Lib: `src/lib/name.ts` (camelCase)
 - Types: defined in `src/lib/types.ts` — import from there
 - API routes: `src/app/api/[route]/route.ts`
+- Public scripts: `scripts/*.mjs` (ESM, no build step)
+- Docs: `docs/*.md` for user-facing reference; project-internal docs stay in `.cursor/skills/`
 
 ## AI Provider Rules
 - Both providers implement the same `AnalysisProvider` interface in `src/lib/types.ts`
 - Gemini (primary / default): native `fetch` against the Generative Language REST API with `gemini-2.5-flash` (overridable via `GEMINI_MODEL`). Reads `GEMINI_API_KEY` (legacy `GOOGLE_AI_API_KEY` still accepted as fallback). Always sets `thinkingConfig: { thinkingBudget: 0 }` because 2.5 Flash is a thinking model that otherwise consumes the entire output budget on internal reasoning.
 - NVIDIA (fallback): OpenAI-compatible chat-completions with `nvidia/llama-3.1-nemotron-ultra-253b-v1`. Two transports — preferred order:
-  1. **NVIDIA NIM** (direct, preferred) — `https://integrate.api.nvidia.com/v1/chat/completions`, auth `Bearer ${NVIDIA_NIM_API_KEY}` (`nvapi-...`), model overridable via `NVIDIA_NIM_MODEL`.
+  1. **NVIDIA NIM** (direct, preferred) — `https://integrate.api.nvidia.com/v1/chat/completions`, auth `Bearer ${NVIDIA_NIM_API_KEY}` (`nvapi-...`), model overridable via `NVIDIA_NIM_MODEL`. NIM's Nemotron Ultra returns JSON in `message.reasoning_content` (not `message.content`) when `response_format: json_object` is set — `NvidiaProvider` reads both fields.
   2. **OpenRouter** (used only if NIM key is absent) — `https://openrouter.ai/api/v1/chat/completions`, auth `Bearer ${OPENROUTER_API_KEY}` (`sk-or-v1-...`), model overridable via `OPENROUTER_NVIDIA_MODEL`. Always set `HTTP-Referer` + `X-Title` for ranking attribution.
 - Use native `fetch` for ALL providers — no SDKs.
-- `/api/analyze` defaults `provider` to `"gemini"`. It always tries the requested provider first, then automatically falls back to the other if it errors. Response includes `fallback_used` and `X-Provider-Fallback` header.
+- `/api/analyze` defaults `provider` to `"gemini"`. It always tries the requested provider first, then automatically falls back to the other if it errors. Response includes `fallback_used`, `requested_provider`, and `X-Provider-Fallback` header.
 - System prompt lives in `src/lib/prompts.ts` — shared between both providers
 - Always ask for JSON output; strip markdown fences before `JSON.parse()`
 - Max tokens: 2048 for NVIDIA, 4096 for Gemini
 - Do NOT add Anthropic / Claude back. The `@anthropic-ai/sdk` dependency has been removed.
 
-## UI Rules
-- Color palette: dark theme (#080808 bg, #FFE048 accent, grade colors)
-- Grade colors: S=#00FFB2, A=#7CFF6B, B=#FFE048, C=#FF9F43, D=#FF6B6B, F=#FF3860
+## UI Rules — Editorial AI theme
+- Dark editorial palette: warm-charcoal background `#0A0A0B`, paper-warm body text `#ECEAE3`
+- Brand accent: editorial vermilion `#FF6A2A` (NOT `#FFE048` — the old yellow collided with the grade-B data color)
+- Display font: **Fraunces** (variable serif, optical sizing) — for the YCWorthy wordmark, company H2, YC partner pull-quote
+- Body / UI font: **Geist** (Vercel 2026 neo-grotesque) — body, buttons, labels
+- Mono: **JetBrains Mono** — meta strips, micro-labels, code
+- Grade colors (data-only — never overlap with brand vermilion): S=`#00FFB2`, A=`#7CFF6B`, B=`#F4B942`, C=`#FF9F43`, D=`#FF6B6B`, F=`#FF3860`
 - Use shadcn/ui components where available (Button, Input, Badge, Card)
 - Animations: CSS transitions preferred; use Framer Motion only for complex sequences
 - Mobile-first responsive — everything must work on 375px width
+- Accessibility: visible `:focus-visible` rings (vermilion), respect `prefers-reduced-motion`, semantic landmarks, ARIA on all interactive elements
 
 ## API Route Rules
-- All routes return `{ data, error }` shape
+- All routes use the helpers in `src/lib/http.ts` for CORS, request IDs, and the `meta` envelope
+- Every public route must export `OPTIONS` (returns `preflight()`) so browsers can CORS-preflight it
 - Validate request body with zod before processing
-- Never expose raw API errors to client
-- Add `X-Provider` response header indicating which AI was used
+- Never expose raw upstream errors to client — wrap in `errorResponse()` with an `error_code`
+- Add `X-Provider`, `X-Provider-Fallback`, `X-Duration-Ms`, `X-Request-Id`, `X-Api-Version` response headers when relevant
+- Bump `API_VERSION` in `src/lib/version.ts` (and the OpenAPI spec) on any breaking change
+- Keep the OpenAPI spec at `src/app/api/openapi.json/route.ts` in sync with route changes
 
 ## Environment Variables
 - `GEMINI_API_KEY` — required for Gemini (primary). Legacy `GOOGLE_AI_API_KEY` still works as a fallback.
@@ -54,12 +65,15 @@
 - `NVIDIA_NIM_MODEL` — optional override for the NIM model slug
 - `OPENROUTER_API_KEY` — fallback transport for NVIDIA Nemotron (used only if NIM key absent)
 - `OPENROUTER_NVIDIA_MODEL` — optional override for the OpenRouter model slug
-- At least one NVIDIA transport (`NVIDIA_NIM_API_KEY` or `OPENROUTER_API_KEY`) must be set for the fallback chain to function
+- At least one provider key (`GEMINI_API_KEY`, `NVIDIA_NIM_API_KEY`, or `OPENROUTER_API_KEY`) must be set
+- For the MCP server / CLI: `YCWORTHY_API_URL` (default `https://ycworthy.intelliforge.tech`), `YCWORTHY_PROVIDER` (default `gemini`), `YCWORTHY_TIMEOUT` (default `90000`)
 - Never read env vars in client components — only in API routes and server components
 
 ## Do NOT
 - Use `pages/` directory — this is App Router only
 - Use `axios` — use native `fetch`
 - Use `moment.js` — use `date-fns`
-- Add `console.log` to production code — use proper error boundaries
+- Add `console.log` to production code — use proper error boundaries (server-side `console.error` is fine for logs)
 - Hardcode API keys anywhere
+- Hardcode `#FFE048` anywhere — that was the old yellow accent and conflicts with grade-B data color
+- Add a new public API route without also updating `src/app/api/openapi.json/route.ts`

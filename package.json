@@ -1,15 +1,23 @@
 {
   "name": "ycworthy",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "AI-powered Y Combinator startup evaluator. Drop a URL, get a brutal partner verdict — accessible via web, REST API, MCP, or CLI.",
+  "bin": {
+    "ycworthy": "scripts/cli.mjs",
+    "ycworthy-mcp": "scripts/mcp-server.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "analyze": "node scripts/cli.mjs",
+    "mcp": "node scripts/mcp-server.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
