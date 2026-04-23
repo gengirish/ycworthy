@@ -58,6 +58,11 @@ export async function GET(req: NextRequest) {
   const gradeColor = GRADE_COLOR[grade];
   const gradeLabel = GRADE_LABEL[grade];
 
+  // satori notes (avoid silent render failures):
+  //   • every <div> with multiple children must set `display: 'flex'`
+  //   • use `backgroundImage`/`backgroundColor`, not the `background` shorthand
+  //   • avoid `inset` keyword in box-shadow
+  //   • stick to ASCII / standard Latin glyphs (no rare unicode arrows)
   return new ImageResponse(
     (
       <div
@@ -66,13 +71,13 @@ export async function GET(req: NextRequest) {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          background: "#060A12",
+          backgroundColor: "#060A12",
           color: "#E6F1FF",
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
           position: "relative",
         }}
       >
-        {/* HUD lattice background */}
+        {/* HUD lattice background (satori-safe: explicit `to bottom`/`to right` direction + comma-separated color stops) */}
         <div
           style={{
             position: "absolute",
@@ -82,12 +87,11 @@ export async function GET(req: NextRequest) {
             bottom: 0,
             display: "flex",
             backgroundImage:
-              "linear-gradient(rgba(0,224,184,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0,224,184,0.07) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
+              "linear-gradient(to bottom, rgba(0, 224, 184, 0.07), rgba(0, 224, 184, 0.07) 1px, transparent 1px, transparent 60px), linear-gradient(to right, rgba(0, 224, 184, 0.07), rgba(0, 224, 184, 0.07) 1px, transparent 1px, transparent 60px)",
           }}
         />
 
-        {/* Teal vignette anchoring the top */}
+        {/* Teal vignette anchoring the top — satori-safe radial syntax */}
         <div
           style={{
             position: "absolute",
@@ -96,8 +100,8 @@ export async function GET(req: NextRequest) {
             right: 0,
             bottom: 0,
             display: "flex",
-            background:
-              "radial-gradient(ellipse 60% 80% at 50% 0%, rgba(0,224,184,0.18), transparent 70%)",
+            backgroundImage:
+              "radial-gradient(ellipse at top, rgba(0, 224, 184, 0.18) 0%, rgba(6, 10, 18, 0) 70%)",
           }}
         />
 
@@ -145,8 +149,8 @@ export async function GET(req: NextRequest) {
               letterSpacing: -1,
             }}
           >
-            YCWorthy
-            <span style={{ color: "#00E0B8" }}>.</span>
+            <span style={{ display: "flex" }}>YCWorthy</span>
+            <span style={{ display: "flex", color: "#00E0B8" }}>.</span>
           </div>
           <div
             style={{
@@ -160,7 +164,7 @@ export async function GET(req: NextRequest) {
               padding: "6px 14px",
               border: "1px solid rgba(0,224,184,0.35)",
               borderRadius: 999,
-              background: "rgba(0,224,184,0.05)",
+              backgroundColor: "rgba(0,224,184,0.05)",
             }}
           >
             <div
@@ -168,12 +172,12 @@ export async function GET(req: NextRequest) {
                 width: 8,
                 height: 8,
                 borderRadius: 999,
-                background: "#00E0B8",
+                backgroundColor: "#00E0B8",
                 marginRight: 10,
                 display: "flex",
               }}
             />
-            YC Telemetry Engine
+            <span style={{ display: "flex" }}>YC Telemetry Engine</span>
           </div>
         </div>
 
@@ -198,18 +202,18 @@ export async function GET(req: NextRequest) {
               justifyContent: "center",
               flexShrink: 0,
               border: `8px solid ${gradeColor}`,
-              background: `radial-gradient(circle, ${gradeColor}30 0%, rgba(6,10,18,0) 70%)`,
-              boxShadow: `0 0 90px ${gradeColor}55, inset 0 0 60px ${gradeColor}22`,
+              backgroundImage: `radial-gradient(circle at center, ${gradeColor}30 0%, rgba(6, 10, 18, 0) 70%)`,
+              boxShadow: `0 0 90px ${gradeColor}55`,
             }}
           >
             <div
               style={{
+                display: "flex",
                 fontSize: 220,
                 fontWeight: 800,
                 color: gradeColor,
-                letterSpacing: -10,
+                letterSpacing: -8,
                 lineHeight: 1,
-                marginTop: -10,
               }}
             >
               {grade}
@@ -237,7 +241,9 @@ export async function GET(req: NextRequest) {
                 marginBottom: 16,
               }}
             >
-              ▸ Partner Verdict · {gradeLabel}
+              <span style={{ display: "flex" }}>
+                Partner Verdict — {gradeLabel}
+              </span>
             </div>
             <div
               style={{
@@ -334,7 +340,7 @@ export async function GET(req: NextRequest) {
                 <div
                   style={{
                     display: "flex",
-                    fontSize: 32,
+                    fontSize: 26,
                     fontWeight: 700,
                     color: "#E6F1FF",
                     fontFamily: "ui-monospace, monospace",
@@ -361,10 +367,10 @@ export async function GET(req: NextRequest) {
             fontFamily: "ui-monospace, monospace",
           }}
         >
-          <div style={{ display: "flex" }}>ycworthy.intelliforge.tech</div>
-          <div style={{ display: "flex" }}>
-            Gemini 2.5 Flash &nbsp;⇄&nbsp; NVIDIA Nemotron Ultra 253B
-          </div>
+          <span style={{ display: "flex" }}>ycworthy.intelliforge.tech</span>
+          <span style={{ display: "flex" }}>
+            Gemini 2.5 Flash · NVIDIA Nemotron Ultra 253B
+          </span>
         </div>
       </div>
     ),
