@@ -6,7 +6,7 @@ import {
   Plug,
   Terminal,
   ArrowUpRight,
-  Activity,
+  Radio,
   FileJson,
   Check,
   Copy,
@@ -15,10 +15,10 @@ import {
 import { useState } from "react";
 
 /**
- * "Built for humans, agents & pipelines" — landing-page section that surfaces
- * the four ways into the YCWorthy pipeline (Web, REST API, MCP, CLI). Lives
- * directly on the homepage so anyone landing here can immediately see the
- * automation surface alongside the consumer UI.
+ * "Deploy on any surface" — landing-page section that surfaces the four
+ * endpoints into the YCWorthy pipeline (Web, REST API, MCP, CLI). Designed
+ * to read like a control-room console panel: each surface is a deployment
+ * target with a copy-pastable activation snippet.
  */
 
 const REPO_DOCS = "https://github.com/gengirish/ycworthy/blob/master/docs";
@@ -39,11 +39,11 @@ const SURFACES: Surface[] = [
   {
     id: "web",
     Icon: Globe,
-    eyebrow: "Browser",
-    title: "Web UI",
+    eyebrow: "Surface · Browser",
+    title: "Web console",
     description:
-      "Paste a URL, get a YC partner verdict in under a minute. Mobile-ready, shareable, no signup.",
-    snippet: "↑ paste any URL above\n  Rate It → instant scorecard",
+      "Paste a URL, get a YC partner verdict in under a minute. Mobile-ready, shareable, no signup, full telemetry on display.",
+    snippet: "↑ paste any URL above\n  Run Analysis → instant scorecard",
     ctaLabel: "You're already here",
     ctaHref: "#top",
     ctaInternal: true,
@@ -51,10 +51,10 @@ const SURFACES: Surface[] = [
   {
     id: "rest",
     Icon: Code2,
-    eyebrow: "Public REST API",
-    title: "Hit it from any stack",
+    eyebrow: "Surface · REST",
+    title: "Public HTTP endpoint",
     description:
-      "OpenAPI 3.1 spec, CORS-enabled, request_id echoing, stable error_codes. Wire it into your CRM, Notion, or signal pipeline.",
+      "OpenAPI 3.1 spec, CORS-enabled, request_id echoing, stable error_codes. Wire it into your CRM, Notion, or deal-flow pipeline.",
     snippet:
       'curl -X POST https://ycworthy.intelliforge.tech/api/analyze \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"https://your-startup.com"}\'',
     ctaLabel: "API reference",
@@ -63,10 +63,10 @@ const SURFACES: Surface[] = [
   {
     id: "mcp",
     Icon: Plug,
-    eyebrow: "Model Context Protocol",
-    title: "Plug into any agent",
+    eyebrow: "Surface · MCP",
+    title: "Agent tool — analyze_startup",
     description:
-      "One-line install for Cursor, Claude Desktop, Codex, and any MCP-compatible client. Your agent gets an analyze_startup tool.",
+      "One-line install for Cursor, Claude Desktop, Codex, and any MCP-compatible client. Your agent gets a structured analyze_startup tool.",
     snippet:
       '{\n  "mcpServers": {\n    "ycworthy": { "command": "npx", "args": ["ycworthy-mcp"] }\n  }\n}',
     ctaLabel: "MCP install guide",
@@ -75,8 +75,8 @@ const SURFACES: Surface[] = [
   {
     id: "cli",
     Icon: Terminal,
-    eyebrow: "Command Line",
-    title: "Score from your terminal",
+    eyebrow: "Surface · CLI",
+    title: "Pipeline-friendly binary",
     description:
       "Pipe the JSON into CI, n8n, GitHub Actions, or a quick bash loop. Pretty-print for humans, --json for everything else.",
     snippet:
@@ -127,21 +127,21 @@ export function PlatformSurfaces() {
       aria-labelledby="surfaces-title"
       className="mt-20 mb-12 animate-fade-up delay-200"
     >
-      <div className="inline-flex items-center gap-2 mb-4 font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-full">
-        <Activity className="w-3 h-3" strokeWidth={2.5} aria-hidden />
-        Built for humans, agents &amp; pipelines
+      <div className="inline-flex items-center gap-2 mb-4 font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-full bg-yc-accent/[0.04]">
+        <Radio className="w-3 h-3" strokeWidth={2.5} aria-hidden />
+        Deployment surfaces
       </div>
 
       <h2
         id="surfaces-title"
-        className="font-display font-display-opt text-[clamp(34px,5.5vw,52px)] font-semibold tracking-[-1.5px] leading-[1.05] text-yc-text"
+        className="font-display text-[clamp(34px,5.5vw,52px)] font-bold tracking-[-1.6px] leading-[1.05] text-yc-text"
       >
-        One verdict.<span className="text-yc-accent"> Four ways</span> in.
+        One pipeline.<span className="text-yc-accent"> Four endpoints.</span>
       </h2>
-      <p className="mt-3 font-serif text-yc-dim text-[15px] italic max-w-[600px] leading-[1.55]">
-        The same YC partner pipeline backs every surface — Gemini 2.5 Flash as
-        primary, NVIDIA Nemotron Ultra 253B as automatic fallback. Pick whichever
-        interface matches your workflow.
+      <p className="mt-3 font-sans text-yc-dim text-[15px] max-w-[620px] leading-[1.6]">
+        The same six-axis YC partner pipeline serves every surface — Gemini 2.5
+        Flash as primary, NVIDIA Nemotron Ultra 253B as automatic fallback. Pick
+        whichever endpoint matches your workflow.
       </p>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,7 +159,7 @@ export function PlatformSurfaces() {
           }) => (
             <article
               key={id}
-              className="group flex flex-col p-5 bg-yc-surface border border-yc-border rounded-xl transition-colors duration-200 hover:border-yc-accent/40"
+              className="hud-frame group flex flex-col p-5 bg-yc-surface border border-yc-border rounded-xl transition-colors duration-200 hover:border-yc-accent/40"
             >
               <div className="flex items-center gap-2 text-yc-dim mb-3">
                 <Icon
@@ -174,7 +174,7 @@ export function PlatformSurfaces() {
               <h3 className="font-display text-[22px] font-semibold tracking-[-0.5px] text-yc-text leading-[1.15]">
                 {title}
               </h3>
-              <p className="mt-1.5 font-serif text-[14px] text-yc-dim leading-[1.55]">
+              <p className="mt-1.5 font-sans text-[14px] text-yc-dim leading-[1.6]">
                 {description}
               </p>
 

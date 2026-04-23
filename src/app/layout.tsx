@@ -20,18 +20,20 @@ export const metadata: Metadata = {
     "NVIDIA Nemotron",
     "Gemini",
     "founder-market fit",
+    "MCP server",
     "IntelliForge AI",
   ],
   openGraph: {
-    title: "YCWorthy — AI Startup Evaluator",
-    description: "Is your startup YC-worthy? Find out in 30 seconds.",
+    title: "YCWorthy — YC Telemetry Engine",
+    description:
+      "Point it at any startup URL. Brutal partner verdict scored across the six axes Y Combinator funds on. Web, REST API, MCP, CLI.",
     type: "website",
     siteName: "YCWorthy",
   },
   twitter: {
     card: "summary_large_image",
-    title: "YCWorthy — AI Startup Evaluator",
-    description: "Is your startup YC-worthy? Find out in 30 seconds.",
+    title: "YCWorthy — YC Telemetry Engine",
+    description: "Six-axis YC scorecard for any startup URL. Web · API · MCP · CLI.",
   },
 };
 

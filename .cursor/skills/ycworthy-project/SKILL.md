@@ -46,7 +46,7 @@ ycworthy/
 │   └── mcp-server.mjs       # MCP stdio server (analyze_startup tool)
 ├── next.config.js
 ├── package.json             # bin: { ycworthy, ycworthy-mcp } + scripts: { analyze, mcp }
-├── tailwind.config.ts       # Editorial AI theme (Fraunces + Geist + vermilion)
+├── tailwind.config.ts       # Mission Control theme (Space Grotesk + Inter + HUD teal)
 ├── postcss.config.js
 ├── tsconfig.json            # Strict TS, @/* path alias
 │
@@ -81,48 +81,57 @@ ycworthy/
         └── history.ts                      # localStorage history utilities
 ```
 
-## Design System — Editorial AI theme
+## Design System — "Mission Control" theme
+
+> HUD/Sci-Fi FUI × AI-Native UI × Bento Box Grid. Generated via the [`ui-ux-pro-max`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) reasoning engine for the "AI startup evaluator / scoring engine + multi-agent fallback" product profile. The brand reads as analytical instrumentation rather than a magazine.
 
 ### Colors
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `yc-bg` | #0A0A0B | Primary background (warm near-black, paper feel) |
-| `yc-surface` | #111114 | Cards, inputs |
-| `yc-surface-2` | #17171C | Elevated surfaces |
-| `yc-border` | #23232B | Borders |
-| `yc-border-light` | #33333D | Stronger borders |
-| `yc-accent` | **#FF6A2A** | **Brand vermilion** — interactive UI chrome only (buttons, focus rings, links) |
-| `yc-accent-soft` | #FF8A55 | Hover/lighter brand |
-| `yc-accent-deep` | #D9521A | Pressed/darker brand |
-| `yc-text` | #ECEAE3 | Body text (paper-warm off-white) |
-| `yc-muted` | #5A5A60 | Disabled / placeholder |
-| `yc-dim` | #8A8682 | Secondary text |
-| `grade-s` | #00FFB2 | S grade (exceptional) |
-| `grade-a` | #7CFF6B | A grade (strong) |
-| `grade-b` | **#F4B942** | B grade (solid) — **editorial amber** (NOT the old #FFE048; that collided with the brand accent) |
-| `grade-c` | #FF9F43 | C grade (mediocre) |
-| `grade-d` | #FF6B6B | D grade (weak) |
-| `grade-f` | #FF3860 | F grade (failing) |
+| `yc-bg` | `#060A12` | Primary background — deep-space navy (never pure black) |
+| `yc-surface` | `#0C1320` | Cards, inputs |
+| `yc-surface-2` | `#131D30` | Elevated surfaces |
+| `yc-border` | `#1F2A40` | Borders |
+| `yc-border-light` | `#2C3A56` | Stronger borders |
+| `yc-accent` | **`#00E0B8`** | **Brand HUD teal** — interactive UI chrome only (buttons, focus rings, wordmark dot, links) |
+| `yc-accent-soft` | `#5CFFE0` | Hover/lighter brand |
+| `yc-accent-deep` | `#00B294` | Pressed/darker brand |
+| `yc-accent-2` | **`#7C5CFF`** | **AI-agent violet** — reserved for AI/automation chrome (active provider chip, MCP/agent badges) |
+| `yc-accent-2-soft` | `#A993FF` | AI accent hover |
+| `yc-text` | `#E6F1FF` | Body text (cool paper-white) |
+| `yc-muted` | `#5C6B85` | Disabled / placeholder |
+| `yc-dim` | `#8FA0BD` | Secondary text |
+| `grade-s` | `#00FFC2` | S grade (exceptional) |
+| `grade-a` | `#69E68A` | A grade (strong) |
+| `grade-b` | `#FFD24A` | B grade (solid) |
+| `grade-c` | `#FFA040` | C grade (mediocre) |
+| `grade-d` | `#FF6A6A` | D grade (weak) |
+| `grade-f` | `#FF3A6A` | F grade (failing) |
+| `provider-gemini` | `#4A9EFF` | Gemini chip (canonical brand hue) |
+| `provider-nvidia` | `#76B900` | NVIDIA chip (canonical brand hue) |
 
-**Critical separation:** the brand vermilion (`#FF6A2A`) is reserved for *interactive UI chrome*; the entire green/amber/orange/red spectrum is reserved for *data colors* (grades, likelihoods, flags). Never use `#FF6A2A` for data, never use grade colors for UI chrome.
+**Critical separations** — the brand uses a single piercing **HUD teal** for *interactive UI chrome*, an **AI-violet** for *agent/automation indicators*, and reserves the entire green-amber-orange-red spectrum for *data colors* (grades, likelihoods, flags). Never use `#00E0B8` for data, never use grade colors for UI chrome, never use violet for non-AI elements.
 
 ### Typography
 
 | Font | Tailwind class | Usage |
 |------|---------------|-------|
-| **Fraunces** (variable serif w/ optical sizing) | `font-display`, `font-serif` | YCWorthy wordmark, company H2, YC partner pull-quote |
-| **Geist** (Vercel's neo-grotesque) | `font-sans` | Body, buttons, labels |
-| **JetBrains Mono** | `font-mono` | Meta strips, micro-labels, score badges |
+| **Space Grotesk** 600/700 (geometric futurist) | `font-display` | YCWorthy wordmark, company H2, headlines, grade letters, partner pull-quote |
+| **Inter** 400/500/600 (workhorse sans) | `font-sans` | Body, buttons, descriptions, sub-labels |
+| **JetBrains Mono** 400/500/600 | `font-mono` | Telemetry readouts, eyebrows, micro-labels, code, terminal CTAs |
 
-The `font-display-opt` utility sets `font-variation-settings: "opsz" 144` for the wordmark/heroes.
+The `font-display-opt` utility is preserved for backward compatibility but is now a no-op (Space Grotesk doesn't expose an `opsz` axis).
 
 ### Effects
 
-- `bg-film-grain` — subtle SVG film-grain overlay (mix-blend-overlay, opacity 0.03)
-- `bg-grid` — faint warm-white grid (very low opacity)
-- `text-glow-accent` — vermilion text-shadow for the wordmark
-- `grade-glow-{s,a,b,c,d,f}` — grade-tinted box-shadow rings
+- `.bg-film-grain` — horizontal scanlines (≈3.5% opacity, mix-blend-overlay) — Mission Control signature texture (class name kept for back-compat with the previous "film grain" Editorial theme)
+- `.bg-grid` — cool teal HUD lattice (`80px` grid, ≈4.5% opacity)
+- `.hud-frame` — corner-tick brackets on top-left + bottom-right of any card; intensifies on hover
+- `.text-glow-accent` — HUD-teal text-shadow
+- `.grade-glow-{s,a,b,c,d,f}` — grade-tinted box-shadow rings (retuned for Mission Control palette)
+- `glow-pulse` keyframe — heartbeat for active instruments (teal)
+- `agent-sweep` keyframe — slow rotating sweep around active AI chip
 
 ## Data Flow
 
@@ -171,7 +180,7 @@ The `font-display-opt` utility sets `font-variation-settings: "opsz" 144` for th
 3. **Zod validation** for all API input
 4. **`{ data, error, meta }` response shape** from API routes — use `jsonResponse()` / `errorResponse()` helpers from `src/lib/http.ts`
 5. **Grade colors from `types.ts`** — never hardcode hex values for data
-6. **Brand vermilion `#FF6A2A` from Tailwind tokens** — never hardcode it inline; never use it for data
+6. **Brand colors via Tailwind tokens (`yc-accent` teal, `yc-accent-2` violet)** — never hardcode hex; never use HUD teal for data; never use violet outside AI/automation chrome
 7. **Every public route exports `OPTIONS`** returning `preflight()` (CORS support)
 8. **Update `src/app/api/openapi.json/route.ts`** in the same commit as any route change; bump `API_VERSION`
 9. **`"use client"` only where needed** — components with state/effects

@@ -172,13 +172,14 @@ useEffect(() => {
 
 ## Key Rules
 
-1. **Dark theme only** — no light mode, `#080808` background
+1. **Mission Control dark theme only** — no light mode, deep-space navy `#060A12` background (never pure black)
 2. **Use `clsx`** for conditional class names, not string concatenation
-3. **Dynamic colors via `style` prop** when Tailwind can't express them (grade colors)
-4. **Font mono for labels/scores** (`font-mono text-[10px] tracking-[2px] uppercase`)
-5. **Font sans (Georgia) for body text** — the default
-6. **Gold accent (#FFE048)** for primary emphasis
+3. **Dynamic colors via `style` prop** when Tailwind can't express them (grade colors keyed off `GRADE_COLOR`)
+4. **Font mono for telemetry/labels** (`font-mono text-[10px] tracking-[2px] uppercase`) — JetBrains Mono
+5. **Font display (Space Grotesk) for headlines + grade letters**, font sans (Inter) for body
+6. **HUD teal `yc-accent` (`#00E0B8`)** for primary chrome only (buttons, focus rings, wordmark dot, links). **AI-violet `yc-accent-2`** only for AI/automation chrome. Never use either for grade data.
 7. **Never use `alert()`** — show inline error messages
-8. **All data constants in `src/lib/types.ts`** — `GRADE_COLOR`, `CRITERIA_META`, etc.
-9. **`animate-fade-up`** for section entrances
-10. **Mobile-first** — design for 375px, scale up with `sm:`, `md:`
+8. **All data constants in `src/lib/types.ts`** — `GRADE_COLOR`, `GRADE_BG`, `CRITERIA_META`, etc.
+9. **`animate-fade-up`** for section entrances; `glow-pulse` for active instruments; `animate-pulse` on the active provider chip dot
+10. **Wrap the verdict header + interview-question card in `.hud-frame`** — that's the signature instrument-panel chrome
+11. **Mobile-first** — design for 375px, scale up with `sm:`, `md:`

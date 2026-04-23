@@ -7,7 +7,7 @@ import {
   Share2,
   Check,
   XCircle,
-  Sparkles,
+  Radar,
   ExternalLink,
 } from "lucide-react";
 import { AIProvider } from "@/lib/types";
@@ -19,12 +19,12 @@ import { HistoryStrip } from "@/components/HistoryStrip";
 import { PlatformSurfaces } from "@/components/PlatformSurfaces";
 
 const LOADING_STEPS = [
-  "Crawling website...",
-  "Researching the company...",
-  "Evaluating market size...",
-  "Scoring founder-market fit...",
-  "Running YC criteria matrix...",
-  "Writing partner verdict...",
+  "Acquiring target signal...",
+  "Indexing public surface...",
+  "Sizing market envelope...",
+  "Computing founder-market fit...",
+  "Running six-axis YC matrix...",
+  "Compiling partner verdict...",
 ];
 
 function HomeContent() {
@@ -114,14 +114,23 @@ function HomeContent() {
 
   return (
     <main id="top" className="min-h-screen bg-yc-bg text-yc-text font-sans relative">
-      {/* Editorial paper-warm grid */}
+      {/* HUD grid — cool teal lattice replaces the old paper grid */}
       <div
         className="fixed inset-0 pointer-events-none bg-grid bg-[size:80px_80px] z-0"
         aria-hidden
       />
-      {/* Subtle film-grain overlay (3% opacity) — gives a printed-paper feel */}
+      {/* Faint scanlines — Mission Control texture (≈3% opacity) */}
       <div
-        className="fixed inset-0 pointer-events-none bg-film-grain opacity-[0.03] mix-blend-overlay z-0"
+        className="fixed inset-0 pointer-events-none bg-film-grain opacity-[0.04] mix-blend-overlay z-0"
+        aria-hidden
+      />
+      {/* Soft teal vignette anchoring the upper third of the viewport */}
+      <div
+        className="fixed inset-x-0 top-0 h-[420px] pointer-events-none z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(0,224,184,0.10), transparent 70%)",
+        }}
         aria-hidden
       />
 
@@ -129,18 +138,32 @@ function HomeContent() {
         {/* Header */}
         {!result && (
           <header className="mb-[52px] animate-fade-up">
-            <div className="inline-flex items-center gap-2 mb-[18px] font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-full">
-              <Sparkles className="w-3 h-3" strokeWidth={2.5} aria-hidden />
-              YC Evaluation System · v2.1
+            <div className="inline-flex items-center gap-2 mb-[18px] font-mono text-[10px] text-yc-accent tracking-[4px] uppercase border border-yc-accent/25 px-3 py-1 rounded-full bg-yc-accent/[0.04]">
+              <span className="relative inline-flex w-2 h-2" aria-hidden>
+                <span className="absolute inset-0 rounded-full bg-yc-accent/60 animate-ping" />
+                <span className="relative inline-flex w-2 h-2 rounded-full bg-yc-accent" />
+              </span>
+              YC Telemetry Engine · v3.0
             </div>
 
-            <h1 className="m-0 font-display font-display-opt text-[clamp(56px,10vw,96px)] font-semibold tracking-[-3px] leading-[0.95] text-yc-text">
+            <h1 className="m-0 font-display text-[clamp(56px,10vw,104px)] font-bold tracking-[-3.5px] leading-[0.92] text-yc-text">
               YCWorthy<span className="text-yc-accent">.</span>
             </h1>
-            <p className="mt-5 font-serif text-yc-dim text-[18px] italic max-w-[560px] leading-[1.5]">
-              Drop any startup URL. Get a brutal, honest AI evaluation against
-              Y Combinator&apos;s real funding criteria.
+            <p className="mt-5 font-sans text-yc-dim text-[18px] max-w-[580px] leading-[1.55]">
+              Point it at any startup URL. Get a brutal, evidence-based partner
+              verdict scored across the six axes Y Combinator actually funds on
+              <span className="text-yc-text/80"> — in under a minute.</span>
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[10px] text-yc-dim/70 tracking-[1.5px] uppercase">
+              <span className="inline-flex items-center gap-1.5">
+                <Radar className="w-3 h-3 text-yc-accent" strokeWidth={2.5} aria-hidden />
+                Six-axis scoring · S → F
+              </span>
+              <span aria-hidden className="text-yc-border-light">·</span>
+              <span>Multi-agent fallback</span>
+              <span aria-hidden className="text-yc-border-light">·</span>
+              <span>Web · API · MCP · CLI</span>
+            </div>
           </header>
         )}
 
@@ -153,7 +176,7 @@ function HomeContent() {
             <label htmlFor="startup-url" className="sr-only">
               Startup URL
             </label>
-            <div className="flex border border-yc-border rounded-xl overflow-hidden bg-yc-surface mb-4 transition-colors duration-200 focus-within:border-yc-accent/60">
+            <div className="hud-frame flex border border-yc-border rounded-xl overflow-hidden bg-yc-surface mb-4 transition-colors duration-200 focus-within:border-yc-accent/60">
               <div className="px-3.5 flex items-center text-yc-border-light font-mono text-[13px] shrink-0 select-none">
                 https://
               </div>
@@ -175,9 +198,9 @@ function HomeContent() {
                 onClick={() => handleAnalyze()}
                 disabled={loading || !url.trim()}
                 aria-label="Run YC analysis"
-                className="inline-flex items-center gap-1.5 px-[22px] shrink-0 font-mono font-black text-xs tracking-[1px] uppercase transition-colors duration-200 whitespace-nowrap disabled:bg-[#111] disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-white cursor-pointer hover:bg-yc-accent-deep"
+                className="inline-flex items-center gap-1.5 px-[22px] shrink-0 font-mono font-bold text-xs tracking-[1.5px] uppercase transition-colors duration-200 whitespace-nowrap disabled:bg-yc-surface-2 disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-yc-bg cursor-pointer hover:bg-yc-accent-soft"
               >
-                {loading ? "Analyzing..." : "Rate It"}
+                {loading ? "Running..." : "Run Analysis"}
                 {!loading && (
                   <ArrowRight className="w-3.5 h-3.5" strokeWidth={3} aria-hidden />
                 )}
@@ -285,7 +308,7 @@ function HomeContent() {
         {/* Footer */}
         <footer className="mt-16 pt-8 border-t border-yc-border/60 text-center">
           <p className="font-mono text-[10px] text-yc-dim tracking-[2px] uppercase inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-            <span>Built by</span>
+            <span>Engineered by</span>
             <a
               href="https://www.intelliforge.tech/"
               target="_blank"

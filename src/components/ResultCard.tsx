@@ -5,13 +5,13 @@ import { GradeRing } from "./GradeRing";
 import { CriteriaGrid } from "./CriteriaGrid";
 
 // Likelihood colors mirror grade colors so the eye groups them visually.
-// "Probable" was #FFE048 — switched to the editorial amber to match the new
-// grade-B color (no more yellow-vs-vermilion brand collision).
+// Mission Control palette — the same telemetry-grade vibrancy used for the
+// six-axis grades, so the likelihood pill reads as part of the readout strip.
 const LIKELIHOOD_COLOR: Record<string, string> = {
-  Unlikely: "#FF6B6B",
-  Possible: "#FF9F43",
-  Probable: "#F4B942",
-  Strong: "#00FFB2",
+  Unlikely: "#FF6A6A",
+  Possible: "#FFA040",
+  Probable: "#FFD24A",
+  Strong: "#00FFC2",
 };
 
 interface Props {
@@ -27,9 +27,9 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
 
   return (
     <div className="animate-fade-up">
-      {/* Verdict header */}
+      {/* Verdict header — HUD instrument panel for the final readout */}
       <div
-        className="bg-yc-surface rounded-2xl p-7 mb-4 relative overflow-hidden"
+        className="hud-frame bg-yc-surface rounded-2xl p-7 mb-4 relative overflow-hidden"
         style={{ border: `1px solid ${gradeColor}30` }}
       >
         <div
@@ -56,17 +56,17 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
                 {result.yc_likelihood} chance
               </span>
             </div>
-            <p className="m-0 mb-2.5 text-yc-dim text-[13px] italic">
+            <p className="m-0 mb-2.5 text-yc-dim text-[13px]">
               {result.tagline}
             </p>
-            <p className="m-0 text-[14px] text-[#d0d0d0] leading-[1.75]">
+            <p className="m-0 text-[14px] text-yc-text/85 leading-[1.75]">
               {result.verdict}
             </p>
           </div>
         </div>
 
-        {/* Meta strip */}
-        <div className="mt-5 pt-4 border-t border-[#1a1a1a] flex gap-5 flex-wrap">
+        {/* Telemetry readout strip */}
+        <div className="mt-5 pt-4 border-t border-yc-border flex gap-5 flex-wrap">
           {[
             { label: "Overall Score", val: `${result.overall_score}/100` },
             {
@@ -97,15 +97,15 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         {[
           {
-            title: "Green Flags",
+            title: "Green Signals",
             items: result.green_flags,
-            color: "#00FFB2",
+            color: "#00FFC2",
             Icon: CheckCircle2,
           },
           {
-            title: "Red Flags",
+            title: "Red Signals",
             items: result.red_flags,
-            color: "#FF6B6B",
+            color: "#FF6A6A",
             Icon: XCircle,
           },
         ].map((panel) => {
@@ -114,7 +114,7 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
             <div
               key={panel.title}
               className="bg-yc-surface rounded-xl p-[18px_20px]"
-              style={{ border: `1px solid ${panel.color}20` }}
+              style={{ border: `1px solid ${panel.color}24` }}
             >
               <div
                 className="font-mono text-[10px] tracking-[2px] uppercase mb-3 inline-flex items-center gap-1.5"
@@ -127,9 +127,12 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
                 {panel.items.map((item, i) => (
                   <li
                     key={i}
-                    className="text-[13px] text-[#bdbdbd] py-2 pl-6 relative leading-relaxed"
+                    className="text-[13px] text-yc-text/75 py-2 pl-6 relative leading-relaxed"
                     style={{
-                      borderBottom: i < panel.items.length - 1 ? "1px solid #181818" : "none",
+                      borderBottom:
+                        i < panel.items.length - 1
+                          ? "1px solid rgba(31,42,64,0.7)"
+                          : "none",
                     }}
                   >
                     <PanelIcon
@@ -147,18 +150,20 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
         })}
       </div>
 
-      {/* YC Interview Question */}
-      <div className="bg-yc-surface border border-yc-accent/25 rounded-xl p-[20px_22px] mt-4 relative overflow-hidden">
+      {/* YC Interview Question — pull-quote on its own instrument panel */}
+      <div className="hud-frame bg-yc-surface border border-yc-accent/25 rounded-xl p-[20px_22px] mt-4 relative overflow-hidden">
         <div
           className="absolute -top-10 -right-10 w-40 h-40 pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${gradeColor}10, transparent 70%)` }}
+          style={{
+            background: `radial-gradient(circle, ${gradeColor}14, transparent 70%)`,
+          }}
           aria-hidden
         />
         <div className="font-mono text-[10px] text-yc-accent tracking-[2px] uppercase mb-2.5 inline-flex items-center gap-1.5 relative z-10">
           <MessageSquareQuote className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
-          The YC Partner Would Ask…
+          Partner would ask
         </div>
-        <p className="m-0 font-serif text-[16px] text-[#ececec] italic leading-[1.7] relative z-10">
+        <p className="m-0 font-display text-[18px] text-yc-text leading-[1.55] relative z-10 tracking-[-0.3px]">
           &ldquo;{result.yc_interview_question}&rdquo;
         </p>
       </div>
@@ -170,7 +175,7 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
           className="inline-flex items-center gap-2 bg-transparent border border-yc-border text-yc-dim px-7 py-2.5 rounded-lg cursor-pointer font-mono text-xs tracking-[1px] uppercase transition-colors duration-200 hover:border-yc-accent/40 hover:text-yc-accent"
         >
           <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
-          Analyze Another
+          Run Another Target
         </button>
       </div>
     </div>

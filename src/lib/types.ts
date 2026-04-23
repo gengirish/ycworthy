@@ -48,28 +48,27 @@ export interface AnalysisProvider {
 
 /**
  * Grade colors are *data* colors — they must remain distinct from the brand
- * vermilion accent (#FF6A2A) so the eye can separate "scorecard data" from
- * "interactive UI". Editorial AI theme:
- *   • B was #FFE048 (yellow) — clashed with the old yellow brand accent.
- *     Switched to a calmer editorial amber (#F4B942) that sits cleanly
- *     between the vermilion brand color and the orange grade-C.
+ * HUD-teal accent (#00E0B8) and AI-violet secondary (#7C5CFF) so the eye
+ * can separate "scorecard data" from "interactive UI". Mission Control
+ * theme: each step is engineered for readability against the deep-navy
+ * ground at small sizes (telemetry-grade vibrancy).
  */
 export const GRADE_COLOR: Record<Grade, string> = {
-  S: "#00FFB2",
-  A: "#7CFF6B",
-  B: "#F4B942",
-  C: "#FF9F43",
-  D: "#FF6B6B",
-  F: "#FF3860",
+  S: "#00FFC2",
+  A: "#69E68A",
+  B: "#FFD24A",
+  C: "#FFA040",
+  D: "#FF6A6A",
+  F: "#FF3A6A",
 };
 
 export const GRADE_BG: Record<Grade, string> = {
-  S: "rgba(0,255,178,0.07)",
-  A: "rgba(124,255,107,0.07)",
-  B: "rgba(244,185,66,0.07)",
-  C: "rgba(255,159,67,0.07)",
-  D: "rgba(255,107,107,0.07)",
-  F: "rgba(255,56,96,0.07)",
+  S: "rgba(0,255,194,0.07)",
+  A: "rgba(105,230,138,0.07)",
+  B: "rgba(255,210,74,0.07)",
+  C: "rgba(255,160,64,0.07)",
+  D: "rgba(255,106,106,0.07)",
+  F: "rgba(255,58,106,0.07)",
 };
 
 // CRITERIA_META moved to src/lib/criteria.tsx (now uses Lucide SVG icons).

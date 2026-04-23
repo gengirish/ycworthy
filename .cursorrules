@@ -37,17 +37,23 @@
 - Max tokens: 2048 for NVIDIA, 4096 for Gemini
 - Do NOT add Anthropic / Claude back. The `@anthropic-ai/sdk` dependency has been removed.
 
-## UI Rules — Editorial AI theme
-- Dark editorial palette: warm-charcoal background `#0A0A0B`, paper-warm body text `#ECEAE3`
-- Brand accent: editorial vermilion `#FF6A2A` (NOT `#FFE048` — the old yellow collided with the grade-B data color)
-- Display font: **Fraunces** (variable serif, optical sizing) — for the YCWorthy wordmark, company H2, YC partner pull-quote
-- Body / UI font: **Geist** (Vercel 2026 neo-grotesque) — body, buttons, labels
-- Mono: **JetBrains Mono** — meta strips, micro-labels, code
-- Grade colors (data-only — never overlap with brand vermilion): S=`#00FFB2`, A=`#7CFF6B`, B=`#F4B942`, C=`#FF9F43`, D=`#FF6B6B`, F=`#FF3860`
+## UI Rules — "Mission Control" theme (HUD/Sci-Fi × AI-Native × Bento)
+- Background: deep-space navy `#060A12` — never pure black; always slightly blue so the HUD-teal accent has somewhere to glow against
+- Surfaces: `#0C1320` (yc-surface), `#131D30` (yc-surface-2); borders `#1F2A40` / `#2C3A56`
+- Text: cool paper-white `#E6F1FF`, dim `#8FA0BD`, muted `#5C6B85`
+- Brand accent: HUD teal `#00E0B8` (single instrument color) — never use it for grade data
+- AI-agent secondary: violet `#7C5CFF` — reserved for AI/automation chrome (active provider chip, MCP/agent badges)
+- Grade ramp (data colors only): S=`#00FFC2`, A=`#69E68A`, B=`#FFD24A`, C=`#FFA040`, D=`#FF6A6A`, F=`#FF3A6A`
+- Provider chips (canonical): gemini=`#4A9EFF`, nvidia=`#76B900`
+- Display font: **Space Grotesk** 600/700 — wordmark, headlines, grade letters
+- Body / UI font: **Inter** 400/500/600 — body, buttons, descriptions, sub-labels
+- Mono: **JetBrains Mono** — telemetry readouts, micro-labels, code, eyebrows
+- Chrome: HUD frame corner-ticks via `.hud-frame` utility (top-left + bottom-right ticks); horizontal scanline overlay at ≈3.5% opacity via `.bg-film-grain` (renamed in spirit but the class name is preserved for compat)
 - Use shadcn/ui components where available (Button, Input, Badge, Card)
-- Animations: CSS transitions preferred; use Framer Motion only for complex sequences
+- Animations: CSS transitions preferred; `glow-pulse` retuned to teal; `agent-sweep` for active AI chips
 - Mobile-first responsive — everything must work on 375px width
-- Accessibility: visible `:focus-visible` rings (vermilion), respect `prefers-reduced-motion`, semantic landmarks, ARIA on all interactive elements
+- Accessibility: visible `:focus-visible` rings (teal `#00E0B8`), respect `prefers-reduced-motion`, semantic landmarks, ARIA on all interactive elements
+- **Token names are stable across themes** — `yc-bg`, `yc-accent`, `grade-s`, … never change; only their values do. This means rebrands don't churn component class names.
 
 ## API Route Rules
 - All routes use the helpers in `src/lib/http.ts` for CORS, request IDs, and the `meta` envelope
@@ -75,5 +81,6 @@
 - Use `moment.js` — use `date-fns`
 - Add `console.log` to production code — use proper error boundaries (server-side `console.error` is fine for logs)
 - Hardcode API keys anywhere
-- Hardcode `#FFE048` anywhere — that was the old yellow accent and conflicts with grade-B data color
+- Hardcode `#FFE048`, `#FF6A2A`, or any retired-theme hex — use the `yc-*` / `grade-*` Tailwind tokens so rebrands stay one-file changes
+- Use the HUD-teal accent `#00E0B8` for grade/data — that's reserved for brand chrome only
 - Add a new public API route without also updating `src/app/api/openapi.json/route.ts`

@@ -50,12 +50,19 @@ export function ModelToggle({ value, onChange, disabled }: Props) {
               !disabled && "cursor-pointer"
             )}
           >
-            <div className="font-display font-bold text-[13px] tracking-tight">
+            <div className="font-display font-semibold text-[13px] tracking-tight inline-flex items-center gap-1.5">
+              {active && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ background: p.color }}
+                  aria-hidden
+                />
+              )}
               {p.label}
             </div>
             <div
               className="text-[10px] mt-0.5 font-mono"
-              style={{ color: active ? `${p.color}c0` : "#555" }}
+              style={{ color: active ? `${p.color}c0` : "#5C6B85" }}
             >
               {p.sub}
             </div>

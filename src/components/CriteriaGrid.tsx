@@ -94,7 +94,7 @@ export function CriteriaGrid({ criteria }: Props) {
                 </p>
               </div>
               <div
-                className="font-display font-black text-[28px] leading-none shrink-0"
+                className="font-display font-bold text-[28px] leading-none shrink-0 tracking-[-1px]"
                 style={{ color, textShadow: `0 0 16px ${color}55` }}
                 aria-label={`Grade ${result.grade}`}
               >

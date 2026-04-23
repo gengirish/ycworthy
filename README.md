@@ -158,12 +158,12 @@ ycworthy/
 │   └── mcp-server.mjs          ← MCP stdio server (analyze_startup tool)
 │
 ├── .env.local.example          ← Copy → .env.local, fill keys
-├── tailwind.config.ts          ← Editorial AI theme — vermilion accent, Fraunces serif
+├── tailwind.config.ts          ← Mission Control theme — HUD teal accent, Space Grotesk display
 ├── package.json                ← `bin: { ycworthy, ycworthy-mcp }`
 │
 └── src/
     ├── app/
-    │   ├── globals.css         ← Fraunces + Geist fonts, paper-warm palette
+    │   ├── globals.css         ← Space Grotesk + Inter + JetBrains Mono, scanline + HUD-frame utilities
     │   ├── layout.tsx
     │   ├── page.tsx            ← Main UI (URL input, history, results)
     │   └── api/
@@ -174,7 +174,7 @@ ycworthy/
     ├── components/             ← ModelToggle, GradeRing, CriteriaGrid, ResultCard, HistoryStrip
     ├── hooks/                  ← useAnalyze
     └── lib/
-        ├── types.ts            ← Shared types + grade colors (S=#00FFB2 … F=#FF3860)
+        ├── types.ts            ← Shared types + grade colors (S=#00FFC2 … F=#FF3A6A)
         ├── version.ts          ← API_VERSION single source of truth
         ├── http.ts             ← CORS + request_id + meta envelope helpers
         ├── prompts.ts          ← Shared system prompt
@@ -185,21 +185,27 @@ ycworthy/
 
 ---
 
-## Design — the "Editorial AI" theme
+## Design — the "Mission Control" theme
 
-YCWorthy uses a custom dark editorial palette generated via the [`ui-ux-pro-max`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) design-system reasoning engine, tuned for an "AI startup evaluator / scorecard" product profile.
+YCWorthy uses a custom HUD/Sci-Fi × AI-Native palette generated via the [`ui-ux-pro-max`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) design-system reasoning engine, tuned for an "AI startup evaluator / scoring engine" product profile. The brand reads as a piece of analytical instrumentation rather than a magazine — deep-space navy ground, HUD-teal primary, AI-violet secondary, and a high-vibrancy grade ramp engineered to read as telemetry (not chart-junk).
 
 | Token | Value |
 |-------|-------|
-| Background | `#0A0A0B` (warm near-black, paper feel) |
-| Body text | `#ECEAE3` (paper-warm off-white) |
-| Brand accent | `#FF6A2A` editorial vermilion *(was `#FFE048` yellow — used to collide with grade-B)* |
-| Display font | **Fraunces** — variable serif w/ optical sizing (the magazine-headline character) |
-| Body / UI font | **Geist** — Vercel's refined neo-grotesque |
-| Mono | **JetBrains Mono** |
-| Grades | S=`#00FFB2` · A=`#7CFF6B` · B=`#F4B942` · C=`#FF9F43` · D=`#FF6B6B` · F=`#FF3860` |
+| Background | `#060A12` deep-space navy (never pure black, so the teal can glow) |
+| Surfaces | `#0C1320` / `#131D30` |
+| Body text | `#E6F1FF` cool paper-white |
+| **Brand accent** | `#00E0B8` HUD teal *(single instrument color — never used for grade data)* |
+| **AI-agent secondary** | `#7C5CFF` violet *(reserved for AI/automation chrome — active provider chip, MCP/agent badges)* |
+| Display font | **Space Grotesk** 600/700 — geometric futurist for wordmark + headlines |
+| Body / UI font | **Inter** 400/500/600 — workhorse for HUD readouts and dense UI |
+| Mono | **JetBrains Mono** — telemetry, code, eyebrows, micro-labels |
+| Grades | S=`#00FFC2` · A=`#69E68A` · B=`#FFD24A` · C=`#FFA040` · D=`#FF6A6A` · F=`#FF3A6A` |
+| Provider chips | gemini=`#4A9EFF` · nvidia=`#76B900` |
+| Chrome | HUD frame corner-ticks (`.hud-frame`) + horizontal scanline overlay (≈3.5% opacity) |
 
-The theme deliberately uses a single piercing vermilion accent for *interactive UI chrome* and reserves the entire green/amber/orange/red spectrum for *data colors* (grades, likelihoods, flags) — so the eye can instantly separate "buttons & focus rings" from "this is the score."
+The brand uses a single piercing **HUD teal** accent for *interactive UI chrome*, an **AI-violet** secondary for *agent/automation indicators*, and reserves the entire green-amber-orange-red spectrum for *data colors* (grades, likelihoods, flags) — so the eye can instantly separate "buttons & focus rings" from "this is the AI" from "this is the score."
+
+Token names (`yc-bg`, `yc-accent`, `grade-s`, …) are intentionally stable across themes — only their values change. So a future rebrand stays a one-file edit to `tailwind.config.ts`.
 
 ---
 
@@ -215,7 +221,7 @@ The theme deliberately uses a single piercing vermilion accent for *interactive 
 - **Bento-grid scorecard** — Hero criterion (Problem) gets a wide cell; remaining five fill in around it.
 - **Recent analyses** — Last 8 analyses stored in localStorage.
 - **Share links** — `/?url=example.com&provider=gemini` triggers analysis on load.
-- **Editorial dark theme** — Vermilion-on-charcoal with Fraunces + Geist typography (see above).
+- **Mission Control theme** — HUD-teal-on-navy with Space Grotesk + Inter + JetBrains Mono, scanline overlay, HUD corner-tick frames (see above).
 - **Mobile-responsive** — Works on 375px+ screens.
 - **Accessible** — `:focus-visible` rings, `prefers-reduced-motion` respected, semantic landmarks, ARIA on all interactive elements.
 
@@ -265,7 +271,7 @@ vercel --prod
 ## Tech stack
 
 - **Next.js 14** App Router, TypeScript strict
-- **Tailwind CSS** — Editorial AI dark theme (Fraunces + Geist + vermilion accent)
+- **Tailwind CSS** — Mission Control theme (Space Grotesk + Inter + HUD-teal accent)
 - **Google Gemini 2.5 Flash** — primary / default, called via the Generative Language REST API with `thinkingBudget: 0`
 - **NVIDIA Nemotron Ultra 253B** — automatic fallback, served via NVIDIA NIM (preferred) or OpenRouter (secondary), both via native `fetch`
 - **Zod** — API request validation

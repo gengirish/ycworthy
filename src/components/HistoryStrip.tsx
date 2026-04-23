@@ -22,7 +22,7 @@ export function HistoryStrip({ onSelect, refreshKey }: Props) {
     <div className="mt-6 animate-fade-up">
       <div className="flex items-center justify-between mb-3">
         <span className="font-mono text-[10px] text-yc-dim uppercase tracking-[2px]">
-          Recent Analyses
+          Recent Targets
         </span>
         <button
           onClick={() => {
@@ -47,7 +47,7 @@ export function HistoryStrip({ onSelect, refreshKey }: Props) {
               aria-label={`Re-analyze ${entry.company}, grade ${entry.overall_grade}`}
             >
               <span
-                className="font-display text-xs font-black"
+                className="font-display text-xs font-bold tracking-[-0.5px]"
                 style={{ color }}
               >
                 {entry.overall_grade}
