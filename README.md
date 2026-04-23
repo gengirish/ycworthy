@@ -2,7 +2,7 @@
 
 > Drop any startup URL. Get a brutal, honest AI evaluation against Y Combinator's real funding criteria.
 >
-> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Gemini 2.5 Flash (default) · NVIDIA Nemotron Ultra 253B (auto fallback) · Vercel
+> **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Gemini 2.5 Flash (default) · NVIDIA Nemotron Ultra 253B (secondary fallback) · xAI Grok (tertiary fallback) · Vercel
 
 **Try it:** [ycworthy.intelliforge.tech](https://ycworthy.intelliforge.tech)
 **Public API:** `https://ycworthy.intelliforge.tech/api/analyze` · [docs](./docs/API.md) · [OpenAPI spec](https://ycworthy.intelliforge.tech/api/openapi.json)
@@ -60,8 +60,11 @@ npm run dev                        # → http://localhost:3000
 | `NVIDIA_NIM_MODEL` | _(optional)_ override the NIM model slug. Defaults to `nvidia/llama-3.1-nemotron-ultra-253b-v1`. |
 | `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) — secondary NVIDIA transport (used only if NIM key absent). |
 | `OPENROUTER_NVIDIA_MODEL` | _(optional)_ override the OpenRouter model slug. |
+| `XAI_API_KEY` | [console.x.ai](https://console.x.ai/) — tertiary fallback provider (Grok). |
+| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) — optional Groq transport for the same tertiary fallback slot (`gsk_...` key format). |
+| `GROK_MODEL` | _(optional)_ override the Grok model slug. Defaults to `grok-3-mini`. |
 
-At least one of `GEMINI_API_KEY`, `NVIDIA_NIM_API_KEY`, or `OPENROUTER_API_KEY` must be set.
+At least one of `GEMINI_API_KEY`, `NVIDIA_NIM_API_KEY`, `OPENROUTER_API_KEY`, or `XAI_API_KEY` must be set.
 
 ---
 
@@ -133,6 +136,12 @@ Full setup (env vars, troubleshooting, all hosts): **[docs/MCP.md](./docs/MCP.md
               NvidiaProvider → Nemotron Ultra 253B                  ← automatic fallback
                  • prefers NIM transport      (NVIDIA_NIM_API_KEY)
                  • falls back to OpenRouter   (OPENROUTER_API_KEY)
+                           │
+                           │  on failure (or when NVIDIA not configured)
+                           ▼
+              GrokProvider (xAI chat completions API)               ← tertiary fallback
+                 • key: XAI_API_KEY
+                 • model: GROK_MODEL (default grok-3-mini)
                            │
                            ▼
                     Shared JSON schema (src/lib/prompts.ts)
@@ -212,6 +221,7 @@ Token names (`yc-bg`, `yc-accent`, `grade-s`, …) are intentionally stable acro
 ## Features
 
 - **Gemini-first, NVIDIA fallback** — Always tries Gemini 2.5 Flash first; if it errors, automatically retries on NVIDIA Nemotron Ultra 253B. Surfaces `fallback_used` in the response.
+- **Three-provider resilience chain** — Gemini (primary) → NVIDIA Nemotron (secondary) → xAI Grok (tertiary). The API surfaces `fallback_used` and selected provider in headers + body.
 - **Public REST API** — POST, GET, OPTIONS, CORS-enabled, OpenAPI 3.1 spec at `/api/openapi.json`.
 - **MCP server** — `analyze_startup` tool exposed over stdio; one JSON snippet to install in Claude Desktop / Cursor / Codex.
 - **CLI** — `npx -y github:gengirish/ycworthy ycworthy <url>` from any terminal, with TTY colors and `--json` mode for piping.
@@ -239,6 +249,13 @@ Token names (`yc-bg`, `yc-accent`, `grade-s`, …) are intentionally stable acro
 | API key | `GEMINI_API_KEY` | `NVIDIA_NIM_API_KEY` (preferred) or `OPENROUTER_API_KEY` |
 | Model override | `GEMINI_MODEL` | `NVIDIA_NIM_MODEL` / `OPENROUTER_NVIDIA_MODEL` |
 
+| Feature | xAI Grok |
+|---------|----------|
+| Role | Tertiary fallback |
+| API / transport | xAI OpenAI-compatible chat completions (`https://api.x.ai/v1/chat/completions`) |
+| API key | `XAI_API_KEY` (or `GROK_API_KEY`) |
+| Model override | `GROK_MODEL` (default `grok-3-mini`) |
+
 ---
 
 ## Deploy to Vercel
@@ -254,6 +271,8 @@ Add environment variables in Vercel Dashboard → Settings → Environment Varia
 - `GEMINI_MODEL` _(optional override, defaults to `gemini-2.5-flash`)_
 - `NVIDIA_NIM_API_KEY` _(preferred NVIDIA fallback transport)_ **or** `OPENROUTER_API_KEY` _(secondary NVIDIA fallback transport)_ — at least one is required
 - `NVIDIA_NIM_MODEL` / `OPENROUTER_NVIDIA_MODEL` _(optional model overrides)_
+- `XAI_API_KEY` _(optional tertiary fallback provider: Grok)_
+- `GROK_MODEL` _(optional Grok model override, defaults to `grok-3-mini`)_
 
 Then redeploy:
 
@@ -273,7 +292,8 @@ vercel --prod
 - **Next.js 14** App Router, TypeScript strict
 - **Tailwind CSS** — Mission Control theme (Space Grotesk + Inter + HUD-teal accent)
 - **Google Gemini 2.5 Flash** — primary / default, called via the Generative Language REST API with `thinkingBudget: 0`
-- **NVIDIA Nemotron Ultra 253B** — automatic fallback, served via NVIDIA NIM (preferred) or OpenRouter (secondary), both via native `fetch`
+- **NVIDIA Nemotron Ultra 253B** — secondary fallback, served via NVIDIA NIM (preferred) or OpenRouter (secondary transport), both via native `fetch`
+- **xAI Grok** — tertiary fallback via xAI's OpenAI-compatible chat completions API (native `fetch`)
 - **Zod** — API request validation
 - **`@modelcontextprotocol/sdk`** — MCP server (`scripts/mcp-server.mjs`)
 - **Framer Motion** — Animation library

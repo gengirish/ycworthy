@@ -21,7 +21,7 @@
 //   YCWORTHY_API_URL  Base URL of the YCWorthy API.
 //                     Default: https://ycworthy.intelliforge.tech
 //   YCWORTHY_PROVIDER Default AI provider when the caller doesn't specify.
-//                     "gemini" (default) | "nvidia"
+//                     "gemini" (default) | "nvidia" | "grok"
 //   YCWORTHY_TIMEOUT  Per-request timeout in milliseconds. Default: 90000.
 //
 // The server speaks MCP 2024-11-05 over stdio. Logs go to stderr so they
@@ -36,7 +36,11 @@ const DEFAULT_TIMEOUT_MS = 90_000;
 
 const BASE_URL = (process.env.YCWORTHY_API_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
 const DEFAULT_PROVIDER =
-  process.env.YCWORTHY_PROVIDER === "nvidia" ? "nvidia" : "gemini";
+  process.env.YCWORTHY_PROVIDER === "nvidia"
+    ? "nvidia"
+    : process.env.YCWORTHY_PROVIDER === "grok"
+    ? "grok"
+    : "gemini";
 const TIMEOUT_MS = Number(process.env.YCWORTHY_TIMEOUT ?? DEFAULT_TIMEOUT_MS);
 
 function log(...args) {
@@ -168,7 +172,7 @@ async function main() {
             "The startup or product URL to evaluate. Must be a fully-qualified http(s) URL."
           ),
         provider: z
-          .enum(["gemini", "nvidia"])
+          .enum(["gemini", "nvidia", "grok"])
           .optional()
           .describe(
             "Optional AI provider override. Defaults to the server's configured default (currently '" +

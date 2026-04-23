@@ -140,8 +140,9 @@ export function PlatformSurfaces() {
       </h2>
       <p className="mt-3 font-sans text-yc-dim text-[15px] max-w-[620px] leading-[1.6]">
         The same six-axis YC partner pipeline serves every surface — Gemini 2.5
-        Flash as primary, NVIDIA Nemotron Ultra 253B as automatic fallback. Pick
-        whichever endpoint matches your workflow.
+        Flash as primary, NVIDIA Nemotron Ultra 253B as secondary fallback, and
+        xAI Grok as tertiary fallback. Pick whichever endpoint matches your
+        workflow.
       </p>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -236,13 +237,23 @@ export function PlatformSurfaces() {
         </span>
         <span
           className="inline-flex items-center gap-1.5 text-yc-dim/60"
-          aria-label="Fallback AI provider"
+          aria-label="Secondary fallback AI provider"
         >
           <span
             className="w-1.5 h-1.5 rounded-full bg-provider-nvidia"
             aria-hidden
           />
           NVIDIA Nemotron Ultra
+        </span>
+        <span
+          className="inline-flex items-center gap-1.5 text-yc-dim/60"
+          aria-label="Tertiary fallback AI provider"
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-yc-accent-2"
+            aria-hidden
+          />
+          xAI Grok
         </span>
       </div>
     </section>

@@ -55,3 +55,10 @@ Thumbs.db
 
 .vercel
 .commit-msg.tmp
+
+# Personal launch notes (local only — never commit)
+LINKEDIN_POSTS.md
+WHATSAPP_POSTS.md
+LAUNCH_NOTES.md
+*.local.md
+/notes/

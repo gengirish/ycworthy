@@ -100,7 +100,7 @@ const CAROUSEL: Slide[] = [
     num: "04",
     eyebrow: "Under the hood",
     headline: "Multi-agent failover. No excuses.",
-    body: "Gemini 2.5 Flash as primary. NVIDIA Nemotron Ultra 253B as automatic fallback. If one rate-limits, the other ships the verdict.",
+    body: "Gemini 2.5 Flash as primary. NVIDIA Nemotron Ultra 253B as secondary fallback. xAI Grok as tertiary fallback. If one rate-limits, the chain still ships the verdict.",
     accent: "violet",
   },
   {
@@ -129,7 +129,7 @@ Docs: https://github.com/gengirish/ycworthy
 What might interest this crowd specifically:
 
 • Same scoring pipeline ships on four surfaces from day one — web UI, public REST API (OpenAPI 3.1 spec at /api/openapi.json), MCP server (npx ycworthy-mcp, plug into Cursor / Claude Desktop / Codex), and a CLI (npx ycworthy <url>, --json mode for piping).
-• Multi-provider failover — Gemini 2.5 Flash as primary with NVIDIA Nemotron Ultra 253B as automatic fallback. The API surfaces fallback_used + X-Provider-Fallback so you know which model wrote the verdict.
+• Multi-provider failover — Gemini 2.5 Flash as primary, NVIDIA Nemotron Ultra 253B as secondary fallback, xAI Grok as tertiary fallback. The API surfaces fallback_used + X-Provider-Fallback so you know when failover fired.
 • Edge OG image generation per verdict (next/og), so any shared verdict URL renders a Mission Control–themed scorecard in Twitter/Slack/LinkedIn previews.
 • Stack: Next.js 14 App Router on Vercel, TypeScript strict, native fetch for both providers (no SDKs), zod everywhere, edge runtime for the OG route.
 
@@ -150,7 +150,7 @@ const PH_DESCRIPTION = `YCWorthy is an AI startup evaluator that reads any URL a
 
 It’s the opposite of a flattery machine. The model is allowed to say no, surfaces red flags, and writes the actual question a YC partner would ask in week-1 office hours.
 
-Built on Gemini 2.5 Flash with NVIDIA Nemotron Ultra 253B as automatic fallback — and shipped on four surfaces from day one: Web UI, public REST API (OpenAPI 3.1), MCP server (one-line install for Cursor / Claude Desktop / Codex), and a CLI for your pipelines.
+Built on Gemini 2.5 Flash with NVIDIA Nemotron Ultra 253B and xAI Grok as automatic failover chain — and shipped on four surfaces from day one: Web UI, public REST API (OpenAPI 3.1), MCP server (one-line install for Cursor / Claude Desktop / Codex), and a CLI for your pipelines.
 
 Free. No signup. Brutally honest.`;
 

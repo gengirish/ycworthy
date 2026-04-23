@@ -92,7 +92,11 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
               val:
                 provider === "gemini"
                   ? "Gemini 2.5 Flash"
-                  : "NVIDIA Nemotron Ultra 253B",
+                  : provider === "nvidia"
+                  ? "NVIDIA Nemotron Ultra 253B"
+                  : provider === "grok"
+                  ? "xAI Grok"
+                  : "—",
             },
             { label: "Analysis Time", val: durationMs ? `${(durationMs / 1000).toFixed(1)}s` : "—" },
           ].map((m) => (

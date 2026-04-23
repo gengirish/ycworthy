@@ -16,7 +16,7 @@ One tool: **`analyze_startup`**
 
 | Field | Description |
 |-------|-------------|
-| **Input** | `url` (required, http/https), `provider` (optional: `gemini` \| `nvidia`) |
+| **Input** | `url` (required, http/https), `provider` (optional: `gemini` \| `nvidia` \| `grok`) |
 | **Output (text)** | A Markdown report — partner verdict, criteria scorecard, green/red flags, YC interview question |
 | **Output (structured)** | The full `AnalysisResult` JSON, with a `_meta` block containing `provider_used`, `fallback_used`, `duration_ms`, `request_id` |
 
@@ -119,7 +119,7 @@ All configuration is via environment variables — no flags, no config file. Eve
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `YCWORTHY_API_URL` | `https://ycworthy.intelliforge.tech` | Base URL of the YCWorthy API. Override to hit a self-hosted instance. |
-| `YCWORTHY_PROVIDER` | `gemini` | Default AI provider when the LLM caller doesn't specify (`gemini` or `nvidia`). |
+| `YCWORTHY_PROVIDER` | `gemini` | Default AI provider when the LLM caller doesn't specify (`gemini`, `nvidia`, or `grok`). |
 | `YCWORTHY_TIMEOUT` | `90000` | Per-request timeout in milliseconds. |
 
 Pass them via the MCP host config:
@@ -171,7 +171,7 @@ The MCP host's model will call `analyze_startup` once per URL and present result
 The upstream LLM (Gemini or NVIDIA) is slow. Bump `YCWORTHY_TIMEOUT`.
 
 **"Tool failed: YCWorthy API error [all_providers_failed]: ..."**
-Both Gemini and NVIDIA failed. Most often: Gemini quota exhausted + NVIDIA NIM rate limit. The `provider_errors` map in the upstream response tells you which provider hit which limit. If self-hosting, add a backup `OPENROUTER_API_KEY`.
+All configured providers failed (Gemini, NVIDIA, and/or Grok). Most often: Gemini quota exhausted + NVIDIA rate limit + no Grok key configured. The `provider_errors` map in the upstream response tells you which provider hit which limit.
 
 **"Tool failed: Network error contacting ..."**
 The MCP server can't reach the YCWorthy API. Check `YCWORTHY_API_URL` and your network. The default URL (`https://ycworthy.intelliforge.tech`) is the public production deployment.

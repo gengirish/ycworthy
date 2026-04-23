@@ -10,7 +10,8 @@
 //     status: "ok" | "degraded",
 //     providers: {
 //       gemini:  { configured: boolean, model: string },
-//       nvidia:  { configured: boolean, transport: "nim" | "openrouter" | null, model: string }
+//       nvidia:  { configured: boolean, transport: "nim" | "openrouter" | null, model: string },
+//       grok:    { configured: boolean, model: string }
 //     },
 //     meta: { api_version, request_id, timestamp, duration_ms }
 //   }
@@ -26,10 +27,12 @@ import {
   preflight,
 } from "@/lib/http";
 import { hasAnyNvidiaKey } from "@/lib/nvidia";
+import { hasGrokKey } from "@/lib/grok";
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_NIM_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
 const DEFAULT_OPENROUTER_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
+const DEFAULT_GROK_MODEL = "grok-3-mini";
 
 export async function OPTIONS() {
   return preflight();
@@ -45,6 +48,7 @@ export async function GET(req: NextRequest) {
   const nimConfigured = Boolean(process.env.NVIDIA_NIM_API_KEY);
   const openrouterConfigured = Boolean(process.env.OPENROUTER_API_KEY);
   const nvidiaConfigured = hasAnyNvidiaKey();
+  const grokConfigured = hasGrokKey();
 
   // Match NvidiaProvider's preference order: NIM > OpenRouter.
   const nvidiaTransport: "nim" | "openrouter" | null = nimConfigured
@@ -54,7 +58,7 @@ export async function GET(req: NextRequest) {
     : null;
 
   const status =
-    geminiConfigured || nvidiaConfigured ? "ok" : "degraded";
+    geminiConfigured || nvidiaConfigured || grokConfigured ? "ok" : "degraded";
 
   return jsonResponse(
     {
@@ -71,6 +75,10 @@ export async function GET(req: NextRequest) {
             nvidiaTransport === "nim"
               ? process.env.NVIDIA_NIM_MODEL ?? DEFAULT_NIM_MODEL
               : process.env.OPENROUTER_NVIDIA_MODEL ?? DEFAULT_OPENROUTER_MODEL,
+        },
+        grok: {
+          configured: grokConfigured,
+          model: process.env.GROK_MODEL ?? DEFAULT_GROK_MODEL,
         },
       },
     },

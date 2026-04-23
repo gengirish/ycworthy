@@ -6,9 +6,9 @@
 //   POST   /api/analyze   { url, provider? }      ← classic JSON body
 //   OPTIONS                                       ← CORS preflight
 //
-// Default provider: Gemini (gemini-2.5-flash). On Gemini failure we fall back
-// automatically to NVIDIA Nemotron Ultra 253B (NIM preferred, OpenRouter
-// fallback transport). Anthropic / Claude has been fully removed.
+// Default provider: Gemini (gemini-2.5-flash). On failure we fall back
+// automatically to NVIDIA Nemotron Ultra 253B (secondary) and then Grok
+// (tertiary). Anthropic / Claude has been fully removed.
 //
 // Every response carries a `meta` envelope: { api_version, request_id,
 // timestamp, duration_ms }. Headers also expose `X-Request-Id`, `X-Provider`,
@@ -19,6 +19,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { NvidiaProvider, hasAnyNvidiaKey } from "@/lib/nvidia";
 import { GeminiProvider } from "@/lib/gemini";
+import { GrokProvider, hasGrokKey } from "@/lib/grok";
 import { AIProvider, AnalysisProvider, AnalysisResult } from "@/lib/types";
 import {
   buildMeta,
@@ -28,7 +29,7 @@ import {
   preflight,
 } from "@/lib/http";
 
-const ProviderSchema = z.enum(["nvidia", "gemini"]).default("gemini");
+const ProviderSchema = z.enum(["nvidia", "gemini", "grok"]).default("gemini");
 
 const RequestSchema = z.object({
   url: z.string().url("Invalid URL format"),
@@ -43,7 +44,7 @@ function hasNvidiaKey(): boolean {
   // True when EITHER NVIDIA NIM (preferred) or OpenRouter is configured.
   return hasAnyNvidiaKey();
 }
-
+ 
 interface RunResult {
   data: AnalysisResult;
   provider: AIProvider;
@@ -56,7 +57,11 @@ async function tryRun(
   url: string
 ): Promise<AnalysisResult> {
   const analyzer: AnalysisProvider =
-    provider === "gemini" ? new GeminiProvider() : new NvidiaProvider();
+    provider === "gemini"
+      ? new GeminiProvider()
+      : provider === "nvidia"
+      ? new NvidiaProvider()
+      : new GrokProvider();
   return analyzer.analyze(url);
 }
 
@@ -77,9 +82,9 @@ async function runAnalyze(
   const { url, provider: requested } = input;
 
   // Hard guard: no provider configured at all.
-  if (!hasGeminiKey() && !hasNvidiaKey()) {
+  if (!hasGeminiKey() && !hasNvidiaKey() && !hasGrokKey()) {
     return errorResponse(
-      "No AI provider configured. Set GEMINI_API_KEY (primary) and/or NVIDIA_NIM_API_KEY (preferred) or OPENROUTER_API_KEY (NVIDIA fallback transports).",
+      "No AI provider configured. Set GEMINI_API_KEY (primary) and/or NVIDIA_NIM_API_KEY (secondary) or OPENROUTER_API_KEY (NVIDIA transport) and/or XAI_API_KEY / GROK_API_KEY / GROQ_API_KEY for tertiary fallback.",
       {
         status: 500,
         code: "no_provider_configured",
@@ -89,9 +94,13 @@ async function runAnalyze(
     );
   }
 
-  // Build the call order: requested first, the other as fallback.
+  // Build call order: requested first, then full fallback chain.
   const order: AIProvider[] =
-    requested === "nvidia" ? ["nvidia", "gemini"] : ["gemini", "nvidia"];
+    requested === "nvidia"
+      ? ["nvidia", "gemini", "grok"]
+      : requested === "grok"
+      ? ["grok", "gemini", "nvidia"]
+      : ["gemini", "nvidia", "grok"];
 
   const errors: Partial<Record<AIProvider, string>> = {};
   let result: RunResult | null = null;
@@ -100,6 +109,7 @@ async function runAnalyze(
     const provider = order[i];
     if (provider === "nvidia" && !hasNvidiaKey()) continue;
     if (provider === "gemini" && !hasGeminiKey()) continue;
+    if (provider === "grok" && !hasGrokKey()) continue;
 
     try {
       const data = await tryRun(provider, url);

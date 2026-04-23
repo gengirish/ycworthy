@@ -10,7 +10,7 @@
 //
 // OPTIONS
 //
-//   --provider <gemini|nvidia>   AI provider override (default: gemini)
+//   --provider <gemini|nvidia|grok>   AI provider override (default: gemini)
 //   --json                       Emit raw JSON (no pretty rendering)
 //   --api <url>                  Override API base URL
 //                                (default: https://ycworthy.intelliforge.tech)
@@ -21,6 +21,7 @@
 //
 //   node scripts/cli.mjs stripe.com
 //   node scripts/cli.mjs https://airbnb.com --provider nvidia
+//   node scripts/cli.mjs https://perplexity.ai --provider grok
 //   node scripts/cli.mjs https://example.com --json | jq .data.overall_grade
 //
 // EXIT CODES
@@ -63,7 +64,7 @@ Usage:
   node scripts/cli.mjs <url> [options]
 
 Options:
-  --provider <gemini|nvidia>   AI provider override (default: gemini)
+  --provider <gemini|nvidia|grok>   AI provider override (default: gemini)
   --json                       Emit raw JSON (no pretty rendering)
   --api <url>                  Override API base URL
   --timeout <ms>               Per-request timeout (default: ${DEFAULT_TIMEOUT_MS})
@@ -72,6 +73,7 @@ Options:
 Examples:
   node scripts/cli.mjs stripe.com
   node scripts/cli.mjs https://airbnb.com --provider nvidia
+  node scripts/cli.mjs https://perplexity.ai --provider grok
   node scripts/cli.mjs example.com --json | jq .data.overall_grade
 `);
 }
@@ -106,8 +108,10 @@ function parseArgs(argv) {
     usage();
     process.exit(2);
   }
-  if (opts.provider && !["gemini", "nvidia"].includes(opts.provider)) {
-    console.error(red(`error: --provider must be "gemini" or "nvidia"\n`));
+  if (opts.provider && !["gemini", "nvidia", "grok"].includes(opts.provider)) {
+    console.error(
+      red(`error: --provider must be "gemini", "nvidia", or "grok"\n`)
+    );
     process.exit(2);
   }
   if (!opts.url.startsWith("http")) opts.url = `https://${opts.url}`;

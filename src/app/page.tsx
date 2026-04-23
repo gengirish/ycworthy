@@ -83,10 +83,12 @@ function HomeContent() {
     if (paramUrl) {
       autoTriggered.current = true;
       setUrl(paramUrl);
-      // Backward-compat: anything that isn't an explicit "nvidia" share link
-      // (or the legacy "claude") falls through to "gemini" — the new default.
+      // Backward-compat: anything that isn't an explicit supported provider
+      // falls through to "gemini" — the default.
       const normalized: AIProvider =
-        paramProvider === "nvidia" ? "nvidia" : "gemini";
+        paramProvider === "nvidia" || paramProvider === "grok"
+          ? paramProvider
+          : "gemini";
       setProvider(normalized);
       setTimeout(() => handleAnalyze(paramUrl, normalized), 100);
     }

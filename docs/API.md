@@ -43,7 +43,7 @@ The same correlation IDs are exposed as headers so non-JSON consumers (shell scr
 | `X-Api-Version` | Same as `meta.api_version` |
 | `X-Request-Id` | Same as `meta.request_id`. Send your own to override. |
 | `X-Duration-Ms` | Server-side wall-clock duration |
-| `X-Provider` | `gemini` or `nvidia` (which provider produced the analysis) |
+| `X-Provider` | `gemini`, `nvidia`, or `grok` (which provider produced the analysis) |
 | `X-Provider-Fallback` | `true` if the requested provider failed and the fallback succeeded |
 
 ---
@@ -59,7 +59,7 @@ X-Request-Id: my-correlation-id   # optional
 
 {
   "url": "https://stripe.com",
-  "provider": "gemini"            // optional, "gemini" (default) | "nvidia"
+  "provider": "gemini"            // optional, "gemini" (default) | "nvidia" | "grok"
 }
 ```
 
@@ -112,17 +112,18 @@ All errors share this shape:
 | `422` | `missing_url` | GET without `url` query param |
 | `422` | `validation_failed` | URL malformed or provider invalid (see `issues` for details) |
 | `500` | `no_provider_configured` | Server has no AI keys configured |
-| `502` | `all_providers_failed` | Both Gemini and NVIDIA failed (see `provider_errors` for per-provider detail) |
+| `502` | `all_providers_failed` | All configured providers failed (see `provider_errors` for per-provider detail) |
 
 When `502` is returned, the response also includes `provider_errors`:
 
 ```json
 {
-  "error": "All AI providers failed. gemini: 429 quota exceeded | nvidia: ...",
+  "error": "All AI providers failed. gemini: 429 quota exceeded | nvidia: ... | grok: ...",
   "error_code": "all_providers_failed",
   "provider_errors": {
     "gemini": "Gemini 429: ...",
-    "nvidia": "NVIDIA NIM 503: ..."
+    "nvidia": "NVIDIA NIM 503: ...",
+    "grok": "Grok 429: ..."
   },
   "meta": { ... }
 }
@@ -152,7 +153,8 @@ $ curl -s https://ycworthy.intelliforge.tech/api/health | jq .
   "status": "ok",
   "providers": {
     "gemini": { "configured": true,  "model": "gemini-2.5-flash" },
-    "nvidia": { "configured": true,  "transport": "nim", "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1" }
+    "nvidia": { "configured": true,  "transport": "nim", "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1" },
+    "grok": { "configured": false, "model": "grok-3-mini" }
   },
   "meta": { "api_version": "1.0.0", "request_id": "...", "timestamp": "...", "duration_ms": 4 }
 }

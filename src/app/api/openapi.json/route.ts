@@ -73,10 +73,10 @@ export async function GET(req: NextRequest) {
               in: "query",
               required: false,
               description:
-                "Preferred AI provider. Defaults to `gemini`. The API automatically falls back to the other provider on failure.",
+                "Preferred AI provider. Defaults to `gemini`. The API automatically falls back through the remaining configured providers on failure.",
               schema: {
                 type: "string",
-                enum: ["gemini", "nvidia"],
+                enum: ["gemini", "nvidia", "grok"],
                 default: "gemini",
               },
             },
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
         },
         AIProvider: {
           type: "string",
-          enum: ["gemini", "nvidia"],
+          enum: ["gemini", "nvidia", "grok"],
         },
         CriterionResult: {
           type: "object",
@@ -299,7 +299,7 @@ export async function GET(req: NextRequest) {
             status: { type: "string", enum: ["ok", "degraded"] },
             providers: {
               type: "object",
-              required: ["gemini", "nvidia"],
+              required: ["gemini", "nvidia", "grok"],
               properties: {
                 gemini: {
                   type: "object",
@@ -321,6 +321,14 @@ export async function GET(req: NextRequest) {
                     model: { type: "string" },
                   },
                 },
+                grok: {
+                  type: "object",
+                  required: ["configured", "model"],
+                  properties: {
+                    configured: { type: "boolean" },
+                    model: { type: "string" },
+                  },
+                },
               },
             },
             meta: { $ref: "#/components/schemas/Meta" },
@@ -332,7 +340,7 @@ export async function GET(req: NextRequest) {
           description: "Successful analysis.",
           headers: {
             "X-Provider": {
-              schema: { type: "string", enum: ["gemini", "nvidia"] },
+              schema: { type: "string", enum: ["gemini", "nvidia", "grok"] },
             },
             "X-Provider-Fallback": {
               schema: { type: "string", enum: ["true", "false"] },

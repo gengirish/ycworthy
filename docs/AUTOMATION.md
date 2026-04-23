@@ -21,7 +21,7 @@ node scripts/cli.mjs notion.so --provider nvidia
 npm run analyze -- figma.com
 ```
 
-Flags: `--provider gemini|nvidia` · `--json` · `--api <url>` · `--timeout <ms>`
+Flags: `--provider gemini|nvidia|grok` · `--json` · `--api <url>` · `--timeout <ms>`
 
 ---
 
