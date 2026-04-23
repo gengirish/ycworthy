@@ -335,6 +335,28 @@ function HomeContent() {
           <p className="mt-3 font-mono text-[10px] text-yc-dim/50 tracking-[1px]">
             Aligned with the Bharat AI Mission · Hyderabad, India
           </p>
+          <p className="mt-2 font-mono text-[10px] tracking-[2px] uppercase">
+            <a
+              href="/launch"
+              className="text-yc-dim/70 hover:text-yc-accent transition-colors duration-200"
+            >
+              Launch hub →
+            </a>
+            <span aria-hidden className="mx-2 text-yc-border-light">·</span>
+            <a
+              href="/api/openapi.json"
+              className="text-yc-dim/70 hover:text-yc-accent transition-colors duration-200"
+            >
+              OpenAPI spec
+            </a>
+            <span aria-hidden className="mx-2 text-yc-border-light">·</span>
+            <a
+              href="/api/health"
+              className="text-yc-dim/70 hover:text-yc-accent transition-colors duration-200"
+            >
+              Health
+            </a>
+          </p>
         </footer>
       </div>
     </main>

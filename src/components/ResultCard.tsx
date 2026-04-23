@@ -1,5 +1,13 @@
 "use client";
-import { CheckCircle2, XCircle, MessageSquareQuote, ArrowLeft } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  MessageSquareQuote,
+  ArrowLeft,
+  Image as ImageIcon,
+  Check,
+} from "lucide-react";
+import { useState } from "react";
 import { AIProvider, AnalysisResult, GRADE_COLOR } from "@/lib/types";
 import { GradeRing } from "./GradeRing";
 import { CriteriaGrid } from "./CriteriaGrid";
@@ -24,6 +32,16 @@ interface Props {
 export function ResultCard({ result, provider, durationMs, onReset }: Props) {
   const gradeColor = GRADE_COLOR[result.overall_grade] ?? "#888";
   const likColor = LIKELIHOOD_COLOR[result.yc_likelihood] ?? "#888";
+  const [copied, setCopied] = useState(false);
+
+  // Edge-rendered Mission Control verdict card. The same query string can be
+  // pasted into Twitter/LinkedIn/Slack — the link unfurl resolves to the OG.
+  const ogShareUrl = `/api/og?${new URLSearchParams({
+    grade: result.overall_grade,
+    company: result.company,
+    score: String(result.overall_score),
+    tagline: result.tagline,
+  }).toString()}`;
 
   return (
     <div className="animate-fade-up">
@@ -168,11 +186,31 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
         </p>
       </div>
 
-      {/* Reset */}
-      <div className="text-center mt-8">
+      {/* Footer actions — share-card + reset */}
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={() => {
+            const fullUrl =
+              typeof window !== "undefined"
+                ? `${window.location.origin}${ogShareUrl}`
+                : ogShareUrl;
+            navigator.clipboard.writeText(fullUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+          }}
+          className="inline-flex items-center gap-2 bg-transparent border border-yc-accent/40 text-yc-accent px-6 py-2.5 rounded-lg cursor-pointer font-mono text-xs tracking-[1.5px] uppercase transition-colors duration-200 hover:bg-yc-accent/10"
+          aria-label={copied ? "Share card URL copied" : "Copy verdict share-card image URL"}
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+          ) : (
+            <ImageIcon className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+          )}
+          {copied ? "Copied" : "Copy share card"}
+        </button>
         <button
           onClick={onReset}
-          className="inline-flex items-center gap-2 bg-transparent border border-yc-border text-yc-dim px-7 py-2.5 rounded-lg cursor-pointer font-mono text-xs tracking-[1px] uppercase transition-colors duration-200 hover:border-yc-accent/40 hover:text-yc-accent"
+          className="inline-flex items-center gap-2 bg-transparent border border-yc-border text-yc-dim px-6 py-2.5 rounded-lg cursor-pointer font-mono text-xs tracking-[1.5px] uppercase transition-colors duration-200 hover:border-yc-accent/40 hover:text-yc-accent"
         >
           <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
           Run Another Target
