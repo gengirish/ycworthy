@@ -112,10 +112,15 @@ function HomeContent() {
   };
 
   return (
-    <main className="min-h-screen bg-yc-bg text-yc-text font-sans">
-      {/* Grid background */}
+    <main className="min-h-screen bg-yc-bg text-yc-text font-sans relative">
+      {/* Editorial paper-warm grid */}
       <div
         className="fixed inset-0 pointer-events-none bg-grid bg-[size:80px_80px] z-0"
+        aria-hidden
+      />
+      {/* Subtle film-grain overlay (3% opacity) — gives a printed-paper feel */}
+      <div
+        className="fixed inset-0 pointer-events-none bg-film-grain opacity-[0.03] mix-blend-overlay z-0"
         aria-hidden
       />
 
@@ -128,10 +133,10 @@ function HomeContent() {
               YC Evaluation System · v2.1
             </div>
 
-            <h1 className="m-0 font-display text-[clamp(48px,9vw,82px)] font-bold tracking-[-3.5px] leading-[0.92] bg-gradient-to-br from-white via-[#bfbfbf] to-[#444] bg-clip-text text-transparent">
-              YCWorthy
+            <h1 className="m-0 font-display font-display-opt text-[clamp(56px,10vw,96px)] font-semibold tracking-[-3px] leading-[0.95] text-yc-text">
+              YCWorthy<span className="text-yc-accent">.</span>
             </h1>
-            <p className="mt-4 font-serif text-yc-dim text-[16px] italic max-w-[520px] leading-[1.55]">
+            <p className="mt-5 font-serif text-yc-dim text-[18px] italic max-w-[560px] leading-[1.5]">
               Drop any startup URL. Get a brutal, honest AI evaluation against
               Y Combinator&apos;s real funding criteria.
             </p>
@@ -169,7 +174,7 @@ function HomeContent() {
                 onClick={() => handleAnalyze()}
                 disabled={loading || !url.trim()}
                 aria-label="Run YC analysis"
-                className="inline-flex items-center gap-1.5 px-[22px] shrink-0 font-mono font-black text-xs tracking-[1px] uppercase transition-colors duration-200 whitespace-nowrap disabled:bg-[#111] disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-black cursor-pointer hover:bg-[#FFD526]"
+                className="inline-flex items-center gap-1.5 px-[22px] shrink-0 font-mono font-black text-xs tracking-[1px] uppercase transition-colors duration-200 whitespace-nowrap disabled:bg-[#111] disabled:text-yc-border-light disabled:cursor-not-allowed bg-yc-accent text-white cursor-pointer hover:bg-yc-accent-deep"
               >
                 {loading ? "Analyzing..." : "Rate It"}
                 {!loading && (

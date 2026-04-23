@@ -4,10 +4,13 @@ import { AIProvider, AnalysisResult, GRADE_COLOR } from "@/lib/types";
 import { GradeRing } from "./GradeRing";
 import { CriteriaGrid } from "./CriteriaGrid";
 
+// Likelihood colors mirror grade colors so the eye groups them visually.
+// "Probable" was #FFE048 — switched to the editorial amber to match the new
+// grade-B color (no more yellow-vs-vermilion brand collision).
 const LIKELIHOOD_COLOR: Record<string, string> = {
   Unlikely: "#FF6B6B",
   Possible: "#FF9F43",
-  Probable: "#FFE048",
+  Probable: "#F4B942",
   Strong: "#00FFB2",
 };
 
@@ -39,7 +42,7 @@ export function ResultCard({ result, provider, durationMs, onReset }: Props) {
           <GradeRing grade={result.overall_grade} size={88} />
           <div className="flex-1 min-w-[220px]">
             <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
-              <h2 className="m-0 font-display text-[24px] font-bold tracking-[-0.5px] text-[#f4f4f4]">
+              <h2 className="m-0 font-display text-[28px] font-semibold tracking-[-0.6px] leading-[1.05] text-yc-text">
                 {result.company}
               </h2>
               <span

@@ -46,10 +46,18 @@ export interface AnalysisProvider {
   analyze(url: string): Promise<AnalysisResult>;
 }
 
+/**
+ * Grade colors are *data* colors — they must remain distinct from the brand
+ * vermilion accent (#FF6A2A) so the eye can separate "scorecard data" from
+ * "interactive UI". Editorial AI theme:
+ *   • B was #FFE048 (yellow) — clashed with the old yellow brand accent.
+ *     Switched to a calmer editorial amber (#F4B942) that sits cleanly
+ *     between the vermilion brand color and the orange grade-C.
+ */
 export const GRADE_COLOR: Record<Grade, string> = {
   S: "#00FFB2",
   A: "#7CFF6B",
-  B: "#FFE048",
+  B: "#F4B942",
   C: "#FF9F43",
   D: "#FF6B6B",
   F: "#FF3860",
@@ -58,7 +66,7 @@ export const GRADE_COLOR: Record<Grade, string> = {
 export const GRADE_BG: Record<Grade, string> = {
   S: "rgba(0,255,178,0.07)",
   A: "rgba(124,255,107,0.07)",
-  B: "rgba(255,224,72,0.07)",
+  B: "rgba(244,185,66,0.07)",
   C: "rgba(255,159,67,0.07)",
   D: "rgba(255,107,107,0.07)",
   F: "rgba(255,56,96,0.07)",

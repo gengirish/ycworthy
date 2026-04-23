@@ -1,4 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/*
+  Editorial AI typography stack:
+    • Fraunces — variable serif w/ optical sizing for display + verdict pull-quotes
+      (the magazine-headline character of the new theme).
+    • Geist Sans — refined neo-grotesque for body/UI; replaces DM Sans.
+    • JetBrains Mono — kept for technical/meta micro-labels.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,21 +19,24 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: #080808;
-    color: #e8e8e8;
+    /* Warm near-black (was clinical #080808) */
+    background: #0A0A0B;
+    /* Paper-warm off-white (was #e8e8e8) */
+    color: #ECEAE3;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* ss01: alternate single-story 'a' on Geist; cv11: tabular figures on Fraunces */
     font-feature-settings: "ss01", "cv11";
   }
 
   body {
-    font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Geist', 'DM Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
 
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #0d0d0d; }
-  ::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
+  ::-webkit-scrollbar-thumb { background: #23232B; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #33333D; }
 
   input, button, textarea {
     font-family: inherit;
@@ -36,34 +46,37 @@
     color: #2a2a2a;
   }
 
+  /* Vermilion selection (was yellow) */
   ::selection {
-    background: rgba(255, 224, 72, 0.19);
-    color: #FFE048;
+    background: rgba(255, 106, 42, 0.22);
+    color: #FF6A2A;
   }
 
   /* a11y: Visible focus rings for keyboard nav (WCAG 2.4.7) */
   :focus { outline: none; }
   :focus-visible {
-    outline: 2px solid #FFE048;
+    outline: 2px solid #FF6A2A;
     outline-offset: 2px;
     border-radius: 4px;
   }
   button:focus-visible,
   a:focus-visible {
-    outline: 2px solid #FFE048;
+    outline: 2px solid #FF6A2A;
     outline-offset: 3px;
   }
   input:focus-visible,
   textarea:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 224, 72, 0.55);
+    box-shadow: 0 0 0 2px rgba(255, 106, 42, 0.55);
   }
 }
 
 @layer components {
+  /* Grade glows — kept as data colors (the *only* place these hexes should
+     appear in CSS; everywhere else uses GRADE_COLOR from types.ts). */
   .grade-glow-s { box-shadow: 0 0 28px rgba(0, 255, 178, 0.33); }
   .grade-glow-a { box-shadow: 0 0 28px rgba(124, 255, 107, 0.33); }
-  .grade-glow-b { box-shadow: 0 0 28px rgba(255, 224, 72, 0.33); }
+  .grade-glow-b { box-shadow: 0 0 28px rgba(244, 185, 66, 0.33); }
   .grade-glow-c { box-shadow: 0 0 28px rgba(255, 159, 67, 0.33); }
   .grade-glow-d { box-shadow: 0 0 28px rgba(255, 107, 107, 0.33); }
   .grade-glow-f { box-shadow: 0 0 28px rgba(255, 56, 96, 0.33); }
@@ -76,8 +89,26 @@
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
 
-  /* Subtle text-shadow accent (Dark Mode OLED: minimal glow) */
-  .text-glow-accent { text-shadow: 0 0 14px rgba(255, 224, 72, 0.35); }
+  /* Vermilion accent glow (was yellow) */
+  .text-glow-accent { text-shadow: 0 0 14px rgba(255, 106, 42, 0.35); }
+
+  /*
+    Editorial film-grain — barely-perceptible noise overlay that gives the
+    page a printed-paper texture. Layered behind content via `pointer-events:
+    none` and `mix-blend-mode: overlay`. Sits on the body/main; opacity is
+    intentionally tiny (≈3%) so it never hurts contrast.
+  */
+  .bg-film-grain {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.92  0 0 0 0 0.91  0 0 0 0 0.88  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+
+  /*
+    Display headline w/ optical sizing — used on the YCWorthy wordmark.
+    Fraunces uses `opsz` axis 9..144; we lock it to a display-grade size.
+  */
+  .font-display-opt {
+    font-variation-settings: "opsz" 144;
+  }
 }
 
 /*

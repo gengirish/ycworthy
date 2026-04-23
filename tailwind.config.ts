@@ -1,5 +1,15 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * "Editorial AI" theme — sophisticated dark editorial palette.
+ * Palette inspired by FT.com / Stratechery / The Information — paper-warm
+ * off-white text on warm charcoals, with a single piercing vermilion accent
+ * that is deliberately distinct from every grade hex (no more brand/data
+ * collision the way #FFE048 used to clash with grade-B).
+ *
+ * Generated via the ui-ux-pro-max design-system reasoning engine for the
+ * "AI startup evaluator / editorial scorecard" product profile.
+ */
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   darkMode: "class",
@@ -7,20 +17,32 @@ const config: Config = {
     extend: {
       colors: {
         yc: {
-          bg: "#080808",
-          surface: "#0d0d0d",
-          "surface-2": "#121212",
-          border: "#1e1e1e",
-          "border-light": "#2a2a2a",
-          accent: "#FFE048",
-          text: "#e8e8e8",
-          muted: "#444444",
-          dim: "#888888",
+          // Warm near-blacks (slightly warmer than pure #000 — paper feel)
+          bg: "#0A0A0B",
+          surface: "#111114",
+          "surface-2": "#17171C",
+          border: "#23232B",
+          "border-light": "#33333D",
+
+          // Editorial Vermilion — FT-coded, instantly distinct from any grade
+          // hex. Nothing in `grade.*` lives in this hue range.
+          accent: "#FF6A2A",
+          "accent-soft": "#FF8A55",
+          "accent-deep": "#D9521A",
+
+          // Paper-warm off-white (not clinical #FFFFFF / #E8E8E8)
+          text: "#ECEAE3",
+          muted: "#5A5A60",
+          dim: "#8A8682",
         },
         grade: {
+          // S/A unchanged — high-vibrancy success greens read perfectly on warm dark
           s: "#00FFB2",
           a: "#7CFF6B",
-          b: "#FFE048",
+          // B was #FFE048 — clashed with the old brand accent. Switched to a
+          // calmer editorial amber that doesn't collide with the new vermilion
+          // brand accent either.
+          b: "#F4B942",
           c: "#FF9F43",
           d: "#FF6B6B",
           f: "#FF3860",
@@ -31,8 +53,10 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Body / UI — recommended by ui-ux-pro-max for tech/AI products
+        // Body / UI — Geist Sans (Vercel's 2026 system; supersedes DM Sans
+        // for a slightly more refined, less generic-startup feel).
         sans: [
+          "'Geist'",
           "'DM Sans'",
           "ui-sans-serif",
           "system-ui",
@@ -41,16 +65,24 @@ const config: Config = {
           "Roboto",
           "sans-serif",
         ],
-        // Display / headlines
+        // Display / headlines — Fraunces (variable serif w/ optical sizing).
+        // This is the heart of the editorial pivot: a magazine-headline serif
+        // for "YCWorthy", company names, and the YC partner verdict pull-quote.
         display: [
-          "'Space Grotesk'",
-          "'DM Sans'",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
+          "'Fraunces'",
+          "'Playfair Display'",
+          "Georgia",
+          "ui-serif",
+          "serif",
         ],
-        // Editorial accent (kept for brand/YC magazine feel where needed)
-        serif: ["Georgia", "'Times New Roman'", "serif"],
+        // Editorial italic body (verdicts, taglines)
+        serif: [
+          "'Fraunces'",
+          "Georgia",
+          "'Times New Roman'",
+          "ui-serif",
+          "serif",
+        ],
         mono: [
           "'JetBrains Mono'",
           "'Fira Code'",
@@ -87,9 +119,10 @@ const config: Config = {
           from: { width: "0%" },
           to: { width: "var(--score-width)" },
         },
+        // Vermilion-tinted glow (was yellow)
         glowPulse: {
-          "0%": { boxShadow: "0 0 20px rgba(255, 224, 72, 0.2)" },
-          "100%": { boxShadow: "0 0 40px rgba(255, 224, 72, 0.5)" },
+          "0%": { boxShadow: "0 0 20px rgba(255, 106, 42, 0.18)" },
+          "100%": { boxShadow: "0 0 40px rgba(255, 106, 42, 0.45)" },
         },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
@@ -97,7 +130,8 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        grid: "linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px)",
+        // Subtler editorial grid (warm white at 1% — was 1.6%)
+        grid: "linear-gradient(rgba(236,234,227,0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(236,234,227,0.012) 1px, transparent 1px)",
       },
       backgroundSize: {
         grid: "80px 80px",
