@@ -19,9 +19,9 @@ interface GrokResponse {
 
 export function hasGrokKey(): boolean {
   return Boolean(
-    process.env.XAI_API_KEY ??
-      process.env.GROK_API_KEY ??
-      process.env.GROQ_API_KEY
+    readEnvTrimmed("XAI_API_KEY") ??
+      readEnvTrimmed("GROK_API_KEY") ??
+      readEnvTrimmed("GROQ_API_KEY")
   );
 }
 
@@ -32,14 +32,15 @@ export class GrokProvider implements AnalysisProvider {
   private readonly endpoint: string;
 
   constructor() {
-    const xaiKey = process.env.XAI_API_KEY ?? process.env.GROK_API_KEY;
-    const groqKey = process.env.GROQ_API_KEY;
+    const xaiKey =
+      readEnvTrimmed("XAI_API_KEY") ?? readEnvTrimmed("GROK_API_KEY");
+    const groqKey = readEnvTrimmed("GROQ_API_KEY");
 
     if (xaiKey) {
       this.label = "xAI Grok";
       this.apiKey = xaiKey;
-      this.model = process.env.GROK_MODEL ?? DEFAULT_XAI_MODEL;
-      this.endpoint = process.env.GROK_API_URL ?? DEFAULT_XAI_ENDPOINT;
+      this.model = readEnvTrimmed("GROK_MODEL") ?? DEFAULT_XAI_MODEL;
+      this.endpoint = readEnvTrimmed("GROK_API_URL") ?? DEFAULT_XAI_ENDPOINT;
       return;
     }
 
@@ -47,8 +48,10 @@ export class GrokProvider implements AnalysisProvider {
       this.label = "Groq";
       this.apiKey = groqKey;
       this.model =
-        process.env.GROQ_MODEL ?? process.env.GROK_MODEL ?? DEFAULT_GROQ_MODEL;
-      this.endpoint = process.env.GROQ_API_URL ?? DEFAULT_GROQ_ENDPOINT;
+        readEnvTrimmed("GROQ_MODEL") ??
+        readEnvTrimmed("GROK_MODEL") ??
+        DEFAULT_GROQ_MODEL;
+      this.endpoint = readEnvTrimmed("GROQ_API_URL") ?? DEFAULT_GROQ_ENDPOINT;
       return;
     }
 
@@ -96,6 +99,13 @@ export class GrokProvider implements AnalysisProvider {
 
     return parseJSON(content);
   }
+}
+
+function readEnvTrimmed(name: string): string | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function normalizeContent(
